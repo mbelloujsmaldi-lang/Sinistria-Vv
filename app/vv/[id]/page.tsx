@@ -1,0 +1,160 @@
+import { createClient } from "@/lib/supabase/server";
+import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
+import { StatutBadge } from "../statut-badge";
+import ActionsVV from "./actions-vv";
+
+export default async function DetailCalculVVPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profil } = await supabase
+    .from("profiles")
+    .select("nom, role")
+    .eq("id", user.id)
+    .single();
+
+  const { data: calcul } = await supabase
+    .from("vv_calculations")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (!calcul) {
+    notFound();
+  }
+
+  const { data: historique } = await supabase
+    .from("vv_calculations_historique")
+    .select("id, action, ancienne_valeur, nouvelle_valeur, observation, created_at, utilisateur_id, profiles(nom)")
+    .eq("vv_calculation_id", id)
+    .order("created_at", { ascending: false });
+
+  return (
+    <main className="mx-auto max-w-2xl px-6 py-10">
+      <div className="mb-8 flex items-baseline gap-2">
+        <span className="text-xl font-semibold tracking-tight text-ink">Sinistria</span>
+        <span className="rounded bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal">
+          VV
+        </span>
+      </div>
+
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-lg font-medium text-ink">
+          {calcul.categorie} — {calcul.bareme_version}
+        </h1>
+        <StatutBadge statut={calcul.statut} />
+      </div>
+
+      <div className="rounded border border-line bg-white p-6">
+        <dl className="grid grid-cols-2 gap-y-2 text-sm">
+          <dt className="text-slate">Réf. dossier externe</dt>
+          <dd className="text-ink">{calcul.reference_dossier_externe || "—"}</dd>
+
+          <dt className="text-slate">Valeur à neuf</dt>
+          <dd className="text-ink">{Number(calcul.valeur_neuve).toLocaleString("fr-MA")} DH</dd>
+
+          <dt className="text-slate">VVADE sans correctif</dt>
+          <dd className="text-ink">
+            {Number(calcul.vvade_sans_correctif).toLocaleString("fr-MA")} DH
+          </dd>
+
+          <dt className="text-slate">Correctif entretien (β)</dt>
+          <dd className="text-ink">
+            {(Number(calcul.correctif_beta_pct) * 100).toFixed(1)}% (
+            {Number(calcul.correctif_beta_montant).toLocaleString("fr-MA")} DH)
+          </dd>
+
+          <dt className="text-slate">Correctif kilométrage (λ)</dt>
+          <dd className="text-ink">
+            {(Number(calcul.correctif_lambda_pct) * 100).toFixed(1)}% (
+            {Number(calcul.correctif_lambda_montant).toLocaleString("fr-MA")} DH)
+          </dd>
+
+          <dt className="font-medium text-ink">Valeur calculée</dt>
+          <dd className="font-medium text-signal">
+            {Number(calcul.valeur_calculee).toLocaleString("fr-MA")} DH
+          </dd>
+
+          {calcul.valeur_definitive && (
+            <>
+              <dt className="font-medium text-ink">Valeur définitive</dt>
+              <dd className="font-medium text-emerald-700">
+                {Number(calcul.valeur_definitive).toLocaleString("fr-MA")} DH
+                {calcul.ecart_dh !== null && (
+                  <span className="ml-2 text-xs font-normal text-slate">
+                    (écart {Number(calcul.ecart_dh).toLocaleString("fr-MA")} DH ·{" "}
+                    {Number(calcul.ecart_pct).toFixed(1)}%)
+                  </span>
+                )}
+              </dd>
+            </>
+          )}
+
+          {calcul.justification_ecart && (
+            <>
+              <dt className="text-slate">Justification écart</dt>
+              <dd className="text-ink">{calcul.justification_ecart}</dd>
+            </>
+          )}
+
+          {calcul.motif_rejet && (
+            <>
+              <dt className="text-slate">Motif de rejet</dt>
+              <dd className="text-ink">{calcul.motif_rejet}</dd>
+            </>
+          )}
+        </dl>
+
+        <ActionsVV
+          calculId={calcul.id}
+          statut={calcul.statut}
+          valeurCalculee={Number(calcul.valeur_calculee)}
+          creePar={calcul.created_by}
+          userId={user.id}
+          role={profil?.role ?? null}
+        />
+      </div>
+
+      {(historique ?? []).length > 0 && (
+        <div className="mt-6 rounded border border-line bg-white p-6">
+          <h2 className="mb-3 text-sm font-medium text-ink">Historique</h2>
+          <ul className="space-y-3 text-sm">
+            {(historique ?? []).map((h) => (
+              <li key={h.id} className="border-b border-line pb-3 last:border-0 last:pb-0">
+                <p className="text-ink">
+                  <span className="font-medium">
+                    {(h.profiles as unknown as { nom: string } | null)?.nom ?? "—"}
+                  </span>{" "}
+                  — {h.action}
+                  {h.observation ? ` — ${h.observation}` : ""}
+                </p>
+                <p className="text-xs text-slate">
+                  {new Date(h.created_at).toLocaleString("fr-MA")}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className="mt-6 text-xs text-slate">
+        <Link href="/vv" className="underline hover:text-ink">
+          ← Retour à la liste des calculs
+        </Link>
+      </p>
+    </main>
+  );
+}
