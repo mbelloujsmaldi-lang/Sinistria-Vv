@@ -26,13 +26,6 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <div className="mb-8 flex items-baseline gap-2">
-        <span className="text-xl font-semibold tracking-tight text-ink">Sinistria</span>
-        <span className="rounded bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal">
-          VV
-        </span>
-      </div>
-
       <div className="rounded border border-line bg-white p-6">
         <p className="text-sm text-slate">Bienvenue,</p>
         <h1 className="mb-4 text-lg font-medium text-ink">

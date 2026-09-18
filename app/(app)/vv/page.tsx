@@ -24,13 +24,6 @@ export default async function ListeCalculsVVPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <div className="mb-8 flex items-baseline gap-2">
-        <span className="text-xl font-semibold tracking-tight text-ink">Sinistria</span>
-        <span className="rounded bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal">
-          VV
-        </span>
-      </div>
-
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-medium text-ink">Calculs de valeur vénale</h1>
         <Link
@@ -41,8 +34,8 @@ export default async function ListeCalculsVVPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded border border-line bg-white">
-        <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto rounded border border-line bg-white">
+        <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="border-b border-line bg-slate-50 text-xs uppercase text-slate">
             <tr>
               <th className="px-4 py-2">Catégorie</th>

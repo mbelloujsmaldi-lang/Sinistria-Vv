@@ -44,13 +44,6 @@ export default async function DetailCalculVVPage({
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
-      <div className="mb-8 flex items-baseline gap-2">
-        <span className="text-xl font-semibold tracking-tight text-ink">Sinistria</span>
-        <span className="rounded bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal">
-          VV
-        </span>
-      </div>
-
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-lg font-medium text-ink">
           {calcul.categorie} — {calcul.bareme_version}

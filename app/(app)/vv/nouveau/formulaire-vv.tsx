@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   calculerValeurVenale,
@@ -72,6 +72,13 @@ export default function FormulaireVV({ userId }: Props) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [enregistre, setEnregistre] = useState(false);
   const [chargement, setChargement] = useState(false);
+  const resultatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (resultat) {
+      resultatRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [resultat]);
 
   const categoriesPossibles = useMemo(
     () => categoriesDisponibles(baremeVersion),
@@ -157,7 +164,7 @@ export default function FormulaireVV({ userId }: Props) {
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4 rounded border border-line bg-white p-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm text-ink">Barème</label>
             <select
@@ -262,7 +269,7 @@ export default function FormulaireVV({ userId }: Props) {
           <summary className="cursor-pointer text-sm font-medium text-ink">
             Correctifs optionnels (entretien, kilométrage, commercial)
           </summary>
-          <div className="mt-3 grid grid-cols-2 gap-4">
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="mb-1 block text-sm text-ink">Kilométrage total</label>
               <input
@@ -339,13 +346,13 @@ export default function FormulaireVV({ userId }: Props) {
       </form>
 
       {resultat && (
-        <div className="rounded border border-line bg-white p-6">
+        <div ref={resultatRef} className="rounded border border-line bg-white p-6">
           <p className="mb-3 text-sm text-slate">
             {enregistre
               ? "Résultat enregistré dans vv_calculations."
               : "Résultat calculé (non enregistré — voir message ci-dessus)."}
           </p>
-          <dl className="grid grid-cols-2 gap-y-2 text-sm">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm">
             <dt className="text-slate">VVADE sans correctif</dt>
             <dd className="text-ink">{resultat.vvadeSansCorrectif.toLocaleString("fr-MA")} DH</dd>
 

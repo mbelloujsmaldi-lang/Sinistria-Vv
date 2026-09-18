@@ -37,9 +37,39 @@ function estNombreFini(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
+const LIMITE_APPELS_PAR_MINUTE = 30;
+
+// Protection contre un bug ou une boucle côté appelant (pas une vraie
+// charge — le volume réel reste faible). Enregistré avant toute
+// validation du payload : une boucle causée par un payload invalide doit
+// être bloquée elle aussi, pas seulement les appels valides.
+async function limiteDeDebitDepassee(
+  admin: ReturnType<typeof createAdminClient>
+): Promise<boolean> {
+  await admin
+    .from("vv_api_calls")
+    .delete()
+    .lt("called_at", new Date(Date.now() - 2 * 60 * 1000).toISOString());
+
+  await admin.from("vv_api_calls").insert({});
+
+  const { count } = await admin
+    .from("vv_api_calls")
+    .select("*", { count: "exact", head: true })
+    .gt("called_at", new Date(Date.now() - 60 * 1000).toISOString());
+
+  return (count ?? 0) > LIMITE_APPELS_PAR_MINUTE;
+}
+
 export async function POST(request: NextRequest) {
   if (!cleAutorisee(request)) {
     return erreur("Non autorisé.", 401);
+  }
+
+  const admin = createAdminClient();
+
+  if (await limiteDeDebitDepassee(admin)) {
+    return erreur("Trop de requêtes. Réessayez dans une minute.", 429);
   }
 
   let corps: unknown;
@@ -173,7 +203,6 @@ export async function POST(request: NextRequest) {
     correctifCommercialPct,
   });
 
-  const admin = createAdminClient();
   const { data, error } = await admin
     .from("vv_calculations")
     .insert({
