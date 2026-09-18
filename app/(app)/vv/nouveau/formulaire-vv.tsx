@@ -146,6 +146,8 @@ export default function FormulaireVV({ userId }: Props) {
         correctif_lambda_pct: r.correctifLambdaPct,
         correctif_lambda_montant: r.correctifLambdaMontant,
         vvade_sans_correctif: r.vvadeSansCorrectif,
+        taux_tva_applique: r.tauxTvaApplique,
+        vvade_finale_ht: r.vvadeFinaleHT,
       });
 
       if (error) {
@@ -373,9 +375,10 @@ export default function FormulaireVV({ userId }: Props) {
               {resultat.correctifCommercialMontant.toLocaleString("fr-MA")} DH
             </dd>
 
-            <dt className="font-medium text-ink">VVADE finale</dt>
+            <dt className="font-medium text-ink">Valeur définitive</dt>
             <dd className="font-medium text-signal">
-              {resultat.vvadeFinale.toLocaleString("fr-MA")} DH
+              {resultat.vvadeFinale.toLocaleString("fr-MA")} DH TTC (
+              {resultat.vvadeFinaleHT.toLocaleString("fr-MA")} DH HT)
               {resultat.plafonneAVN && " (plafonnée à VN)"}
             </dd>
           </dl>

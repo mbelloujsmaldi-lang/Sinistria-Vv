@@ -4,6 +4,17 @@ import Link from "next/link";
 import { StatutBadge } from "../statut-badge";
 import ActionsVV from "./actions-vv";
 
+// Affiche "X DH TTC (Y DH HT)" — le HT n'est calculable que si un taux de
+// TVA a été enregistré pour ce calcul (colonne ajoutée au Sprint 8bis :
+// les calculs plus anciens n'en ont pas, et on n'invente pas un taux
+// "actuel" rétroactivement, voir 0008_ht_ttc.sql).
+function ttcHt(montantTTC: number, tauxTva: number | null, montantHT?: number | null): string {
+  const ttc = `${montantTTC.toLocaleString("fr-MA")} DH TTC`;
+  const ht = montantHT ?? (tauxTva !== null ? montantTTC / (1 + tauxTva) : null);
+  if (ht === null) return ttc;
+  return `${ttc} (${ht.toLocaleString("fr-MA", { maximumFractionDigits: 2 })} DH HT)`;
+}
+
 export default async function DetailCalculVVPage({
   params,
 }: {
@@ -78,14 +89,21 @@ export default async function DetailCalculVVPage({
 
           <dt className="font-medium text-ink">Valeur calculée</dt>
           <dd className="font-medium text-signal">
-            {Number(calcul.valeur_calculee).toLocaleString("fr-MA")} DH
+            {ttcHt(
+              Number(calcul.valeur_calculee),
+              calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null,
+              calcul.vvade_finale_ht !== null ? Number(calcul.vvade_finale_ht) : null
+            )}
           </dd>
 
           {calcul.valeur_definitive && (
             <>
               <dt className="font-medium text-ink">Valeur définitive</dt>
               <dd className="font-medium text-emerald-700">
-                {Number(calcul.valeur_definitive).toLocaleString("fr-MA")} DH
+                {ttcHt(
+                  Number(calcul.valeur_definitive),
+                  calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null
+                )}
                 {calcul.ecart_dh !== null && (
                   <span className="ml-2 text-xs font-normal text-slate">
                     (écart {Number(calcul.ecart_dh).toLocaleString("fr-MA")} DH ·{" "}
@@ -134,6 +152,21 @@ export default async function DetailCalculVVPage({
                   — {h.action}
                   {h.observation ? ` — ${h.observation}` : ""}
                 </p>
+                {(h.ancienne_valeur !== null || h.nouvelle_valeur !== null) && (
+                  <p className="text-xs text-slate">
+                    {h.ancienne_valeur !== null &&
+                      `Ancienne : ${ttcHt(
+                        Number(h.ancienne_valeur),
+                        calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null
+                      )}`}
+                    {h.ancienne_valeur !== null && h.nouvelle_valeur !== null && " → "}
+                    {h.nouvelle_valeur !== null &&
+                      `Nouvelle : ${ttcHt(
+                        Number(h.nouvelle_valeur),
+                        calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null
+                      )}`}
+                  </p>
+                )}
                 <p className="text-xs text-slate">
                   {new Date(h.created_at).toLocaleString("fr-MA")}
                 </p>

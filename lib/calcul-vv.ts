@@ -38,6 +38,15 @@
  *    seuil.
  */
 
+// Taux de TVA normal marocain en vigueur (CGI 2026). La valeur à neuf et la
+// VVADE restent toujours TTC ; ce taux ne sert qu'à afficher l'équivalent
+// HT en complément (obligatoire pour une personne physique en activité
+// professionnelle, utile dans les autres cas — document FMSAR 2023).
+// Stocké par calcul (vv_calculations.taux_tva_applique) plutôt que
+// recalculé à la volée : si ce taux change un jour (loi de finances), les
+// calculs déjà faits doivent garder le taux qui a servi à l'époque.
+export const TAUX_TVA_STANDARD = 0.20;
+
 export const BAREME_VERSIONS = ["2019", "2023"] as const;
 export type BaremeVersion = (typeof BAREME_VERSIONS)[number];
 
@@ -243,6 +252,8 @@ export interface ResultatCalcul {
   correctifCommercialMontant: number;
   vvadeFinale: number;
   plafonneAVN: boolean;
+  tauxTvaApplique: number;
+  vvadeFinaleHT: number;
 }
 
 export function calculerValeurVenale(params: ParametresCalcul): ResultatCalcul {
@@ -320,6 +331,8 @@ export function calculerValeurVenale(params: ParametresCalcul): ResultatCalcul {
   vvadeFinale = Math.min(vvadeFinale, valeurNeuve);
   vvadeFinale = Math.round(vvadeFinale * 100) / 100;
 
+  const vvadeFinaleHT = Math.round((vvadeFinale / (1 + TAUX_TVA_STANDARD)) * 100) / 100;
+
   return {
     ageEnMois,
     vvadeSansCorrectif,
@@ -330,5 +343,7 @@ export function calculerValeurVenale(params: ParametresCalcul): ResultatCalcul {
     correctifCommercialMontant,
     vvadeFinale,
     plafonneAVN,
+    tauxTvaApplique: TAUX_TVA_STANDARD,
+    vvadeFinaleHT,
   };
 }

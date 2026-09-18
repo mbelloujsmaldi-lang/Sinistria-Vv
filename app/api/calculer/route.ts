@@ -225,6 +225,8 @@ export async function POST(request: NextRequest) {
       correctif_lambda_montant: resultat.correctifLambdaMontant,
       vvade_sans_correctif: resultat.vvadeSansCorrectif,
       valeur_calculee: resultat.vvadeFinale,
+      taux_tva_applique: resultat.tauxTvaApplique,
+      vvade_finale_ht: resultat.vvadeFinaleHT,
     })
     .select("id")
     .single();
