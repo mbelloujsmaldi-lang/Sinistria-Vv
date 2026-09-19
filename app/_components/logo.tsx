@@ -1,3 +1,5 @@
+import { LOGO_MARGE_BADGE, LOGO_RATIO } from "@/lib/logo-metrics";
+
 // Identité Sinistria : wordmark (fichier local public/logo) + badge "Vv".
 // Seul point de définition — utilisé par la page de connexion et le
 // layout partagé (dashboard, /vv/*).
@@ -10,14 +12,15 @@ export default function Logo({ hauteur = 40 }: { hauteur?: number }) {
         src="/logo/sinistria-wordmark.svg"
         alt="Sinistria"
         height={hauteur}
-        width={hauteur * 4}
+        width={hauteur * LOGO_RATIO}
         style={{ height: hauteur, width: "auto" }}
       />
       {/* Le SVG garde une marge vide à droite du mot : le badge la recouvre
-          (proportionnel à la hauteur) pour rester collé au texte. */}
+          (proportionnel à la hauteur, voir lib/logo-metrics.ts) pour rester
+          collé au texte. */}
       <span
         className="rounded bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal"
-        style={{ marginLeft: -hauteur * 1.15 }}
+        style={{ marginLeft: hauteur * LOGO_MARGE_BADGE }}
       >
         Vv
       </span>

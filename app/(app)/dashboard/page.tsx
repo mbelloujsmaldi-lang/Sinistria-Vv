@@ -39,7 +39,7 @@ export default async function DashboardPage() {
           </dd>
           <dt className="text-slate">Bureau</dt>
           <dd className="text-ink">{profil?.bureau ?? "—"}</dd>
-          <dt className="text-slate">Calculs VV enregistrés</dt>
+          <dt className="text-slate">Calculs Vv enregistrés</dt>
           <dd className="text-ink">{nombreCalculs ?? 0}</dd>
         </dl>
 

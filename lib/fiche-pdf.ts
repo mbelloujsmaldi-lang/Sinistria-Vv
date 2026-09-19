@@ -1,6 +1,7 @@
 ﻿import { jsPDF, GState } from "jspdf";
 import { moisEntre } from "./calcul-vv";
 import { libelleBareme, libelleCategorie, LABELS_ENTRETIEN_FICHE } from "./libelles-vv";
+import { LOGO_ECART_BADGE_PDF, LOGO_RATIO, LOGO_TEXTE_FIN } from "./logo-metrics";
 
 // Fiche de valeur vénale — UNE SEULE PAGE A4, quelle que soit la donnée.
 // Mise en page à budget vertical fixe : chaque section a une hauteur
@@ -137,11 +138,11 @@ export function construireFiche(
   // l'appelant (voir lib/logo-pdf.ts) ; sans lui, un repli dessiné à la
   // main reproduit le même motif.
   const logoH = 15;
-  const logoW = logoH * 4;
+  const logoW = logoH * LOGO_RATIO;
   let pillX: number;
   if (logoPng) {
     doc.addImage(logoPng, "PNG", M, 6, logoW, logoH);
-    pillX = M + logoW * 0.66 + 1.5;
+    pillX = M + logoW * LOGO_TEXTE_FIN + LOGO_ECART_BADGE_PDF * logoH;
   } else {
     doc.setFillColor(...ENCRE);
     doc.roundedRect(M, 6.8, 13, 13, 3, 3, "F");

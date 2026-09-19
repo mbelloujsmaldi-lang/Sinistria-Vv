@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { LABELS_ROLE, type UserRole } from "@/lib/roles";
+import Logo from "../../_components/logo";
 
 // Page de vérification publique (Sprint 9) — SANS authentification,
 // accessible via le QR code de la fiche PDF. Utilise le client
@@ -22,6 +23,19 @@ function formatTTC(montant: number, tauxTva: number | null): string {
 
 const CARTE = "w-full max-w-sm rounded-lg border border-line bg-white p-6 text-center shadow-sm";
 
+// En-tête commun aux 3 états de la page : le même composant Logo que le
+// reste du produit, pour un tiers qui arrive ici depuis le QR code.
+function EnTete() {
+  return (
+    <div className="mb-4 flex flex-col items-center gap-2">
+      <Logo />
+      <p className="text-xs font-medium uppercase tracking-widest text-slate">
+        Expertise automobile
+      </p>
+    </div>
+  );
+}
+
 export default async function PageVerificationPublique({
   params,
 }: {
@@ -42,9 +56,7 @@ export default async function PageVerificationPublique({
     return (
       <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
         <div className={CARTE}>
-          <p className="mb-2 text-xs font-medium uppercase tracking-widest text-slate">
-            Expertise automobile
-          </p>
+          <EnTete />
           <h1 className="mb-4 text-lg font-medium text-ink">Vérification de dossier</h1>
           <p className="inline-block rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-700">
             Dossier introuvable
@@ -73,9 +85,7 @@ export default async function PageVerificationPublique({
     return (
       <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
         <div className={CARTE}>
-          <p className="mb-2 text-xs font-medium uppercase tracking-widest text-slate">
-            Expertise automobile
-          </p>
+          <EnTete />
           <h1 className="mb-4 text-lg font-medium text-ink">Vérification de dossier</h1>
           <p className="inline-block rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-700">
             Document périmé
@@ -110,9 +120,7 @@ export default async function PageVerificationPublique({
   return (
     <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
       <div className={CARTE}>
-        <p className="mb-2 text-xs font-medium uppercase tracking-widest text-slate">
-          Expertise automobile
-        </p>
+        <EnTete />
         <h1 className="mb-4 text-lg font-medium text-ink">Vérification de dossier</h1>
 
         {valide ? (
