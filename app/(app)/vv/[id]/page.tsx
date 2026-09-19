@@ -4,6 +4,7 @@ import Link from "next/link";
 import { StatutBadge } from "../statut-badge";
 import ActionsVV from "./actions-vv";
 import PdfVV from "./pdf-vv";
+import type { DonneesFiche } from "@/lib/fiche-pdf";
 import { peutReviser, LABELS_ROLE, type UserRole } from "@/lib/roles";
 
 // Affiche "X DH TTC (Y DH HT)" — le HT n'est calculable que si un taux de
@@ -81,6 +82,54 @@ export default async function DetailCalculVVPage({
     validateur = data;
     peutReviserCeCalcul = peutReviser(profil?.role as UserRole | undefined, validateur?.role);
   }
+
+  let createurNom: string | null = null;
+  if (calcul.created_by) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("nom")
+      .eq("id", calcul.created_by)
+      .single();
+    createurNom = data?.nom ?? null;
+  }
+
+  const nombreOuNull = (v: unknown): number | null =>
+    v === null || v === undefined ? null : Number(v);
+
+  const donneesFiche: DonneesFiche = {
+    reference: calcul.reference,
+    numero: Number(calcul.numero),
+    statut: calcul.statut,
+    enregistreLe: calcul.created_at,
+    referenceDossierExterne: calcul.reference_dossier_externe,
+    marque: calcul.marque,
+    modele: calcul.modele ?? null,
+    immatriculation: calcul.immatriculation,
+    categorie: calcul.categorie,
+    baremeVersion: calcul.bareme_version,
+    carburant: calcul.carburant,
+    puissanceFiscale: nombreOuNull(calcul.puissance_fiscale),
+    dateMiseCirculation: calcul.date_mise_circulation,
+    dateSinistre: calcul.date_sinistre,
+    valeurNeuve: Number(calcul.valeur_neuve),
+    kilometrageTotal: nombreOuNull(calcul.kilometrage_total),
+    entretien: calcul.entretien,
+    vvadeSansCorrectif: nombreOuNull(calcul.vvade_sans_correctif),
+    correctifBetaPct: nombreOuNull(calcul.correctif_beta_pct),
+    correctifBetaMontant: nombreOuNull(calcul.correctif_beta_montant),
+    correctifLambdaPct: nombreOuNull(calcul.correctif_lambda_pct),
+    correctifLambdaMontant: nombreOuNull(calcul.correctif_lambda_montant),
+    correctifCommercialPct: nombreOuNull(calcul.correctif_commercial_pct),
+    valeurCalculee: Number(calcul.valeur_calculee),
+    valeurDefinitive: nombreOuNull(calcul.valeur_definitive),
+    ecartDh: nombreOuNull(calcul.ecart_dh),
+    ecartPct: nombreOuNull(calcul.ecart_pct),
+    tauxTvaApplique: nombreOuNull(calcul.taux_tva_applique),
+    createurNom,
+    validateurNom: validateur?.nom ?? null,
+    validateurFonction: validateur?.role ? LABELS_ROLE[validateur.role] : null,
+    valideLe: calcul.valide_le,
+  };
 
   const { data: historique } = await supabase
     .from("vv_calculations_historique")
@@ -191,22 +240,7 @@ export default async function DetailCalculVVPage({
               {peutModifier ? "Modifier" : "Réviser"}
             </Link>
           )}
-          <PdfVV
-            reference={calcul.reference}
-            statut={calcul.statut}
-            categorie={calcul.categorie}
-            baremeVersion={calcul.bareme_version}
-            referenceDossierExterne={calcul.reference_dossier_externe}
-            marque={calcul.marque}
-            immatriculation={calcul.immatriculation}
-            valeurNeuve={Number(calcul.valeur_neuve)}
-            valeurCalculee={Number(calcul.valeur_calculee)}
-            valeurDefinitive={calcul.valeur_definitive !== null ? Number(calcul.valeur_definitive) : null}
-            tauxTvaApplique={calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null}
-            validateurNom={validateur?.nom ?? null}
-            validateurFonction={validateur?.role ? LABELS_ROLE[validateur.role] : null}
-            valideLe={calcul.valide_le}
-          />
+          <PdfVV donnees={donneesFiche} />
         </div>
 
         <ActionsVV

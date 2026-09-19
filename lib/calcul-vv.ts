@@ -132,7 +132,7 @@ function tauxPourAnnee(taux5ans: number[], annee: number): number {
   return 0.05;
 }
 
-function moisEntre(debut: Date, fin: Date): number {
+export function moisEntre(debut: Date, fin: Date): number {
   const anneeDiff = fin.getFullYear() - debut.getFullYear();
   const moisDiff = fin.getMonth() - debut.getMonth();
   const jourAjust = fin.getDate() < debut.getDate() ? -1 : 0;
