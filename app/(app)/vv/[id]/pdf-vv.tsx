@@ -3,6 +3,7 @@
 import { useState } from "react";
 import QRCode from "qrcode";
 import { construireFiche, LIMITE_BAS, type DonneesFiche } from "@/lib/fiche-pdf";
+import { rasteriserLogo } from "@/lib/logo-pdf";
 
 export default function PdfVV({ donnees }: { donnees: DonneesFiche }) {
   const [enCours, setEnCours] = useState(false);
@@ -15,7 +16,8 @@ export default function PdfVV({ donnees }: { donnees: DonneesFiche }) {
     try {
       const url = `${window.location.origin}/verifier/${donnees.reference}`;
       const qrDataUrl = await QRCode.toDataURL(url, { margin: 1, width: 200 });
-      const { doc, bas } = construireFiche(donnees, qrDataUrl);
+      const logoPng = await rasteriserLogo();
+      const { doc, bas } = construireFiche(donnees, qrDataUrl, logoPng);
       if (bas > LIMITE_BAS) {
         throw new Error("La fiche dépasse une page — génération annulée.");
       }

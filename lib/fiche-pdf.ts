@@ -52,7 +52,6 @@ const SIGNAL: RGB = [15, 110, 86];
 const SIGNAL_BG: RGB = [225, 245, 238];
 const LIGNE: RGB = [216, 213, 204];
 const CANEVAS: RGB = [246, 245, 241];
-const CLAIR: RGB = [190, 202, 214];
 const ROUGE: RGB = [211, 47, 47];
 
 const W = 210;
@@ -126,46 +125,62 @@ function ou(v: string | null | undefined, defaut = "—"): string {
 
 export function construireFiche(
   d: DonneesFiche,
-  qrDataUrl: string
+  qrDataUrl: string,
+  logoPng: string | null = null
 ): { doc: jsPDF; bas: number } {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const estValide = d.statut === "valide";
   const taux = d.tauxTvaApplique;
 
-  // ---- En-tête : bande ink + filet signal, identité "Sinistria" ----
-  doc.setFillColor(...ENCRE);
-  doc.rect(0, 0, W, 28, "F");
-  doc.setFillColor(...SIGNAL);
-  doc.rect(0, 28, W, 1.6, "F");
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(21);
-  doc.text("Sinistria", M, 15);
-  const wNom = doc.getTextWidth("Sinistria");
+  // ---- En-tête clair : wordmark Sinistria + badge "Vv", filet signal ----
+  // Le wordmark (encre sur transparent) est fourni rasterisé en PNG par
+  // l'appelant (voir lib/logo-pdf.ts) ; sans lui, un repli dessiné à la
+  // main reproduit le même motif.
+  const logoH = 15;
+  const logoW = logoH * 4;
+  let pillX: number;
+  if (logoPng) {
+    doc.addImage(logoPng, "PNG", M, 6, logoW, logoH);
+    pillX = M + logoW * 0.66 + 1.5;
+  } else {
+    doc.setFillColor(...ENCRE);
+    doc.roundedRect(M, 6.8, 13, 13, 3, 3, "F");
+    doc.setTextColor(247, 246, 241);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("S", M + 6.5, 16.2, { align: "center" });
+    doc.setTextColor(...ENCRE);
+    doc.setFont("times", "normal");
+    doc.setFontSize(22);
+    doc.text("Sinistria", M + 16, 16.2);
+    pillX = M + 16 + doc.getTextWidth("Sinistria") + 2;
+  }
   doc.setFillColor(...SIGNAL_BG);
-  doc.roundedRect(M + wNom + 3, 9.2, 10, 6.4, 1.2, 1.2, "F");
+  doc.roundedRect(pillX, 11, 9, 6.4, 1.2, 1.2, "F");
   doc.setTextColor(...SIGNAL);
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("VV", M + wNom + 8, 13.6, { align: "center" });
-  doc.setTextColor(...CLAIR);
+  doc.text("Vv", pillX + 4.5, 15.6, { align: "center" });
+  doc.setTextColor(...ARDOISE);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.text(
     estValide ? "Fiche de valeur vénale — Définitive" : "Fiche de valeur vénale — Aperçu de calcul",
     M,
-    21.5
+    25.2
   );
+  doc.setFillColor(...SIGNAL);
+  doc.rect(0, 28, W, 1.6, "F");
 
   const bx = W - M - 46;
-  doc.setDrawColor(...(estValide ? SIGNAL_BG : CLAIR));
+  doc.setDrawColor(...(estValide ? SIGNAL : ARDOISE));
   doc.setLineWidth(0.5);
   doc.roundedRect(bx, 7, 46, 14, 1.5, 1.5, "S");
-  doc.setTextColor(...CLAIR);
+  doc.setTextColor(...(estValide ? SIGNAL : ARDOISE));
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
   doc.text(estValide ? "DOCUMENT VALIDÉ" : "DOCUMENT DE CALCUL", bx + 23, 11.6, { align: "center" });
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(...ENCRE);
   doc.setFont("courier", "bold");
   doc.setFontSize(10.5);
   doc.text(d.reference, bx + 23, 17.4, { align: "center" });
@@ -383,7 +398,7 @@ export function construireFiche(
   doc.setFontSize(7);
   doc.text(
     estValide
-      ? "Sinistria VV — barème FMSAR, méthode dégressive"
+      ? "Sinistria Vv — barème FMSAR, méthode dégressive"
       : "Aperçu de calcul — ne pas utiliser comme pièce officielle",
     M,
     H - 8

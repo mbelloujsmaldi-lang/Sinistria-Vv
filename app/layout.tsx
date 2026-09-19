@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sinistria-VV",
+  title: "Sinistria-Vv",
   description: "Calcul de la valeur vénale des véhicules sinistrés",
 };
 

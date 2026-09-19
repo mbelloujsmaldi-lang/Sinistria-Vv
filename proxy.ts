@@ -53,6 +53,11 @@ export default async function proxy(request: NextRequest) {
 // authentification par conception (accessible via le QR code de la fiche
 // PDF) — sinon ce proxy la rediriger vers /login pour tout visiteur non
 // connecté, ce qui viderait la fonctionnalité de son sens.
+// Les fichiers statiques (logo, icône/favicon) sont exclus : la page de
+// connexion les charge sans session, ils ne doivent pas être redirigés
+// vers /login.
 export const config = {
-  matcher: ["/((?!api|verifier|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|verifier|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };

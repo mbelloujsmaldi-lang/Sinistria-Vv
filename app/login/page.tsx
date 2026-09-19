@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Logo from "../_components/logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,11 +33,8 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-10 flex items-baseline gap-2">
-          <span className="text-2xl font-semibold tracking-tight text-ink">Sinistria</span>
-          <span className="rounded bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal">
-            VV
-          </span>
+        <div className="mb-10">
+          <Logo />
         </div>
 
         <h1 className="mb-1 text-lg font-medium text-ink">Connexion</h1>
