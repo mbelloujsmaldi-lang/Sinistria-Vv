@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { StatutBadge } from "../statut-badge";
 import ActionsVV from "./actions-vv";
+import { peutReviser, type UserRole } from "@/lib/roles";
 
 // Affiche "X DH TTC (Y DH HT)" — le HT n'est calculable que si un taux de
 // TVA a été enregistré pour ce calcul (colonne ajoutée au Sprint 8bis :
@@ -47,6 +48,40 @@ export default async function DetailCalculVVPage({
     notFound();
   }
 
+  // Lignée de révision (Sprint 8) : lien vers la ligne précédente et,
+  // si elle a été révisée depuis, vers la révision la plus récente.
+  const { data: revisionPrecedente } = calcul.revision_de
+    ? await supabase
+        .from("vv_calculations")
+        .select("id, reference")
+        .eq("id", calcul.revision_de)
+        .single()
+    : { data: null };
+
+  const { data: revisionSuivante } = await supabase
+    .from("vv_calculations")
+    .select("id, reference")
+    .eq("revision_de", id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const estCreateur = user.id === calcul.created_by;
+  const peutModifier = estCreateur && calcul.statut !== "valide";
+
+  let peutReviserCeCalcul = false;
+  if (calcul.statut === "valide" && calcul.validee_par) {
+    const { data: validateur } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", calcul.validee_par)
+      .single();
+    peutReviserCeCalcul = peutReviser(
+      profil?.role as UserRole | undefined,
+      validateur?.role as UserRole | undefined
+    );
+  }
+
   const { data: historique } = await supabase
     .from("vv_calculations_historique")
     .select("id, action, ancienne_valeur, nouvelle_valeur, observation, created_at, utilisateur_id, profiles(nom)")
@@ -55,12 +90,30 @@ export default async function DetailCalculVVPage({
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <h1 className="text-lg font-medium text-ink">
           {calcul.categorie} — {calcul.bareme_version}
         </h1>
         <StatutBadge statut={calcul.statut} />
       </div>
+
+      <p className="mb-2 text-sm font-medium text-ink">Référence : {calcul.reference}</p>
+
+      {(revisionPrecedente || revisionSuivante) && (
+        <p className="mb-6 space-x-3 text-xs text-slate">
+          {revisionPrecedente && (
+            <Link href={`/vv/${revisionPrecedente.id}`} className="underline hover:text-ink">
+              ← Version précédente : {revisionPrecedente.reference}
+            </Link>
+          )}
+          {revisionSuivante && (
+            <Link href={`/vv/${revisionSuivante.id}`} className="underline hover:text-ink">
+              Révision plus récente : {revisionSuivante.reference} →
+            </Link>
+          )}
+        </p>
+      )}
+      {!revisionPrecedente && !revisionSuivante && <div className="mb-6" />}
 
       <div className="rounded border border-line bg-white p-6">
         <dl className="grid grid-cols-2 gap-y-2 text-sm">
@@ -128,6 +181,17 @@ export default async function DetailCalculVVPage({
             </>
           )}
         </dl>
+
+        {(peutModifier || peutReviserCeCalcul) && (
+          <div className="mt-6 border-t border-line pt-4">
+            <Link
+              href={`/vv/${calcul.id}/modifier`}
+              className="inline-block rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"
+            >
+              {peutModifier ? "Modifier" : "Réviser"}
+            </Link>
+          </div>
+        )}
 
         <ActionsVV
           calculId={calcul.id}

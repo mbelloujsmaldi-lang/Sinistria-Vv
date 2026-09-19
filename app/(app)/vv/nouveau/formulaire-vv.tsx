@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   calculerValeurVenale,
@@ -47,26 +48,67 @@ const LABELS_TYPE_KM: Record<TypeKilometrage, string> = {
 const CHAMP =
   "w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal";
 
-interface Props {
-  userId: string;
+export interface CalculExistant {
+  id: string;
+  reference: string;
+  valeurCalculee: number;
+  valeurNeuve: number;
+  dateMiseCirculation: string;
+  dateSinistre: string;
+  categorie: CategorieVehicule;
+  baremeVersion: BaremeVersion;
+  carburant: Carburant;
+  puissanceFiscale: number;
+  kilometrageTotal: number | null;
+  typeKilometrage: TypeKilometrage | null;
+  entretien: Entretien;
+  correctifCommercialPct: number;
+  referenceDossierExterne: string | null;
 }
 
-export default function FormulaireVV({ userId }: Props) {
+interface Props {
+  userId: string;
+  mode?: "creer" | "modifier" | "reviser";
+  calculExistant?: CalculExistant;
+}
+
+export default function FormulaireVV({ userId, mode = "creer", calculExistant }: Props) {
   const supabase = createClient();
+  const router = useRouter();
 
-  const [baremeVersion, setBaremeVersion] = useState<BaremeVersion>("2023");
-  const [categorie, setCategorie] = useState<CategorieVehicule>("leger_pu7_particulier");
-  const [carburant, setCarburant] = useState<Carburant>("diesel");
-  const [puissanceFiscale, setPuissanceFiscale] = useState("6");
-  const [valeurNeuve, setValeurNeuve] = useState("");
-  const [dateMiseCirculation, setDateMiseCirculation] = useState("");
-  const [dateSinistre, setDateSinistre] = useState(() => new Date().toISOString().slice(0, 10));
-  const [referenceDossierExterne, setReferenceDossierExterne] = useState("");
+  const [baremeVersion, setBaremeVersion] = useState<BaremeVersion>(
+    calculExistant?.baremeVersion ?? "2023"
+  );
+  const [categorie, setCategorie] = useState<CategorieVehicule>(
+    calculExistant?.categorie ?? "leger_pu7_particulier"
+  );
+  const [carburant, setCarburant] = useState<Carburant>(calculExistant?.carburant ?? "diesel");
+  const [puissanceFiscale, setPuissanceFiscale] = useState(
+    String(calculExistant?.puissanceFiscale ?? 6)
+  );
+  const [valeurNeuve, setValeurNeuve] = useState(
+    calculExistant ? String(calculExistant.valeurNeuve) : ""
+  );
+  const [dateMiseCirculation, setDateMiseCirculation] = useState(
+    calculExistant?.dateMiseCirculation ?? ""
+  );
+  const [dateSinistre, setDateSinistre] = useState(
+    () => calculExistant?.dateSinistre ?? new Date().toISOString().slice(0, 10)
+  );
+  const [referenceDossierExterne, setReferenceDossierExterne] = useState(
+    calculExistant?.referenceDossierExterne ?? ""
+  );
 
-  const [kilometrageTotal, setKilometrageTotal] = useState("");
-  const [typeKilometrage, setTypeKilometrage] = useState<TypeKilometrage>("standard");
-  const [entretien, setEntretien] = useState<Entretien>("aucun");
-  const [correctifCommercialPct, setCorrectifCommercialPct] = useState("0");
+  const [kilometrageTotal, setKilometrageTotal] = useState(
+    calculExistant?.kilometrageTotal != null ? String(calculExistant.kilometrageTotal) : ""
+  );
+  const [typeKilometrage, setTypeKilometrage] = useState<TypeKilometrage>(
+    calculExistant?.typeKilometrage ?? "standard"
+  );
+  const [entretien, setEntretien] = useState<Entretien>(calculExistant?.entretien ?? "aucun");
+  const [correctifCommercialPct, setCorrectifCommercialPct] = useState(
+    String(calculExistant?.correctifCommercialPct ?? 0)
+  );
 
   const [resultat, setResultat] = useState<ResultatCalcul | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -126,7 +168,7 @@ export default function FormulaireVV({ userId }: Props) {
       const r = calculerValeurVenale(params);
       setResultat(r);
 
-      const { error } = await supabase.from("vv_calculations").insert({
+      const champsCalcul = {
         reference_dossier_externe: referenceDossierExterne || null,
         valeur_neuve: params.valeurNeuve,
         date_mise_circulation: dateMiseCirculation,
@@ -134,7 +176,6 @@ export default function FormulaireVV({ userId }: Props) {
         categorie,
         bareme_version: baremeVersion,
         valeur_calculee: r.vvadeFinale,
-        created_by: userId,
         carburant,
         puissance_fiscale: params.puissanceFiscale,
         kilometrage_total: params.kilometrageTotal ?? null,
@@ -148,7 +189,61 @@ export default function FormulaireVV({ userId }: Props) {
         vvade_sans_correctif: r.vvadeSansCorrectif,
         taux_tva_applique: r.tauxTvaApplique,
         vvade_finale_ht: r.vvadeFinaleHT,
-      });
+      };
+
+      if (mode === "modifier" && calculExistant) {
+        const { error } = await supabase
+          .from("vv_calculations")
+          .update(champsCalcul)
+          .eq("id", calculExistant.id);
+
+        if (error) {
+          setErreur(`Calcul effectué mais non enregistré : ${error.message}`);
+          return;
+        }
+
+        await supabase.from("vv_calculations_historique").insert({
+          vv_calculation_id: calculExistant.id,
+          utilisateur_id: userId,
+          action: "Modification",
+          ancienne_valeur: calculExistant.valeurCalculee,
+          nouvelle_valeur: r.vvadeFinale,
+        });
+
+        router.push(`/vv/${calculExistant.id}`);
+        router.refresh();
+        return;
+      }
+
+      if (mode === "reviser" && calculExistant) {
+        const { data: nouvelleLigne, error } = await supabase
+          .from("vv_calculations")
+          .insert({ ...champsCalcul, created_by: userId, revision_de: calculExistant.id })
+          .select("id")
+          .single();
+
+        if (error || !nouvelleLigne) {
+          setErreur(`Calcul effectué mais non enregistré : ${error?.message ?? "erreur inconnue"}`);
+          return;
+        }
+
+        await supabase.from("vv_calculations_historique").insert({
+          vv_calculation_id: nouvelleLigne.id,
+          utilisateur_id: userId,
+          action: "Révision",
+          ancienne_valeur: calculExistant.valeurCalculee,
+          nouvelle_valeur: r.vvadeFinale,
+          observation: `Révision de ${calculExistant.reference}`,
+        });
+
+        router.push(`/vv/${nouvelleLigne.id}`);
+        router.refresh();
+        return;
+      }
+
+      const { error } = await supabase
+        .from("vv_calculations")
+        .insert({ ...champsCalcul, created_by: userId });
 
       if (error) {
         setErreur(`Calcul effectué mais non enregistré : ${error.message}`);
@@ -343,7 +438,17 @@ export default function FormulaireVV({ userId }: Props) {
           disabled={chargement}
           className="w-full rounded bg-signal py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
         >
-          {chargement ? "Calcul en cours…" : "Calculer et enregistrer"}
+          {chargement
+            ? mode === "modifier"
+              ? "Enregistrement…"
+              : mode === "reviser"
+                ? "Création de la révision…"
+                : "Calcul en cours…"
+            : mode === "modifier"
+              ? "Enregistrer les modifications"
+              : mode === "reviser"
+                ? "Créer la révision"
+                : "Calculer et enregistrer"}
         </button>
       </form>
 

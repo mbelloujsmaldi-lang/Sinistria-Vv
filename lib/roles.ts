@@ -37,3 +37,15 @@ export function peutValider(role: UserRole | null | undefined): boolean {
   if (!role) return false;
   return NIVEAU_ROLE[role] >= NIVEAU_ROLE.responsable;
 }
+
+// Miroir de la policy RLS "vv_calculations_insert" (0007) : une révision
+// n'est acceptée que si le rang du demandeur est STRICTEMENT supérieur à
+// celui du validateur d'origine. Affichage uniquement — le vrai contrôle
+// est côté RLS.
+export function peutReviser(
+  roleDemandeur: UserRole | null | undefined,
+  roleValidateur: UserRole | null | undefined
+): boolean {
+  if (!roleDemandeur || !roleValidateur) return false;
+  return NIVEAU_ROLE[roleDemandeur] > NIVEAU_ROLE[roleValidateur];
+}
