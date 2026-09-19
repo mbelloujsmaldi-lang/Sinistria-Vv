@@ -8,3 +8,4 @@ _tmp-*
 
 .vercel
 .env*
+supabase/.temp

@@ -3,7 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { StatutBadge } from "../statut-badge";
 import ActionsVV from "./actions-vv";
-import { peutReviser, type UserRole } from "@/lib/roles";
+import PdfVV from "./pdf-vv";
+import { peutReviser, LABELS_ROLE, type UserRole } from "@/lib/roles";
 
 // Affiche "X DH TTC (Y DH HT)" — le HT n'est calculable que si un taux de
 // TVA a été enregistré pour ce calcul (colonne ajoutée au Sprint 8bis :
@@ -70,16 +71,15 @@ export default async function DetailCalculVVPage({
   const peutModifier = estCreateur && calcul.statut !== "valide";
 
   let peutReviserCeCalcul = false;
+  let validateur: { nom: string; role: UserRole } | null = null;
   if (calcul.statut === "valide" && calcul.validee_par) {
-    const { data: validateur } = await supabase
+    const { data } = await supabase
       .from("profiles")
-      .select("role")
+      .select("nom, role")
       .eq("id", calcul.validee_par)
       .single();
-    peutReviserCeCalcul = peutReviser(
-      profil?.role as UserRole | undefined,
-      validateur?.role as UserRole | undefined
-    );
+    validateur = data;
+    peutReviserCeCalcul = peutReviser(profil?.role as UserRole | undefined, validateur?.role);
   }
 
   const { data: historique } = await supabase
@@ -182,16 +182,32 @@ export default async function DetailCalculVVPage({
           )}
         </dl>
 
-        {(peutModifier || peutReviserCeCalcul) && (
-          <div className="mt-6 border-t border-line pt-4">
+        <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-4">
+          {(peutModifier || peutReviserCeCalcul) && (
             <Link
               href={`/vv/${calcul.id}/modifier`}
               className="inline-block rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"
             >
               {peutModifier ? "Modifier" : "Réviser"}
             </Link>
-          </div>
-        )}
+          )}
+          <PdfVV
+            reference={calcul.reference}
+            statut={calcul.statut}
+            categorie={calcul.categorie}
+            baremeVersion={calcul.bareme_version}
+            referenceDossierExterne={calcul.reference_dossier_externe}
+            marque={calcul.marque}
+            immatriculation={calcul.immatriculation}
+            valeurNeuve={Number(calcul.valeur_neuve)}
+            valeurCalculee={Number(calcul.valeur_calculee)}
+            valeurDefinitive={calcul.valeur_definitive !== null ? Number(calcul.valeur_definitive) : null}
+            tauxTvaApplique={calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null}
+            validateurNom={validateur?.nom ?? null}
+            validateurFonction={validateur?.role ? LABELS_ROLE[validateur.role] : null}
+            valideLe={calcul.valide_le}
+          />
+        </div>
 
         <ActionsVV
           calculId={calcul.id}

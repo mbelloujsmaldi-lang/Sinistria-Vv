@@ -49,6 +49,10 @@ export default async function proxy(request: NextRequest) {
 // /api est exclu : ces routes n'ont pas de session Supabase (appels
 // serveur-à-serveur authentifiés par leur propre clé, ex. VV_API_KEY sur
 // /api/calculer) et gèrent elles-mêmes leur autorisation.
+// /verifier est exclu : page de vérification publique (Sprint 9), sans
+// authentification par conception (accessible via le QR code de la fiche
+// PDF) — sinon ce proxy la rediriger vers /login pour tout visiteur non
+// connecté, ce qui viderait la fonctionnalité de son sens.
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|verifier|_next/static|_next/image|favicon.ico).*)"],
 };
