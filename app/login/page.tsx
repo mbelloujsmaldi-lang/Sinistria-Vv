@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Logo from "../_components/logo";
@@ -13,6 +13,16 @@ export default function LoginPage() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [chargement, setChargement] = useState(false);
 
+  // Motif de redirection posé par proxy.ts (compte désactivé / sans profil).
+  useEffect(() => {
+    const motif = new URLSearchParams(window.location.search).get("motif");
+    if (motif === "desactive") {
+      setErreur("Ce compte est désactivé. Contactez un administrateur.");
+    } else if (motif === "sans_profil") {
+      setErreur("Ce compte n'est pas autorisé à accéder à l'application.");
+    }
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErreur(null);
@@ -21,7 +31,11 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setErreur("Identifiants incorrects. Vérifiez votre email et mot de passe.");
+      setErreur(
+        /banned/i.test(error.message)
+          ? "Ce compte est désactivé. Contactez un administrateur."
+          : "Identifiants incorrects. Vérifiez votre email et mot de passe."
+      );
       setChargement(false);
       return;
     }

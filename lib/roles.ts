@@ -8,6 +8,18 @@ export type UserRole =
   | "directeur"
   | "admin_technique";
 
+// Les 8 rôles, du plus bas au plus haut niveau (ordre de user_role en base).
+export const ROLES: UserRole[] = [
+  "technicien",
+  "gestionnaire",
+  "chef_equipe",
+  "superviseur",
+  "responsable",
+  "adjoint_directeur",
+  "directeur",
+  "admin_technique",
+];
+
 export const LABELS_ROLE: Record<UserRole, string> = {
   technicien: "Technicien",
   gestionnaire: "Gestionnaire",

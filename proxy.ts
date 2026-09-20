@@ -37,6 +37,29 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Compte désactivé (actif=false) ou sans profil : accès refusé sur chaque
+  // page, session révoquée. `actif` n'était appliqué nulle part avant le
+  // Sprint 13. (Limite connue : un jeton déjà émis reste valable jusqu'à
+  // 1 h pour des appels directs à l'API Supabase ; le blocage côté Auth
+  // empêche en revanche toute nouvelle connexion et tout renouvellement.)
+  if (user && !isLoginPage) {
+    const { data: profil } = await supabase
+      .from("profiles")
+      .select("actif")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profil || !profil.actif) {
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = `?motif=${profil ? "desactive" : "sans_profil"}`;
+      const redirection = NextResponse.redirect(url);
+      // Reporter les cookies de session effacés par signOut().
+      supabaseResponse.cookies.getAll().forEach((c) => redirection.cookies.set(c));
+      return redirection;
+    }
+  }
+
   if (user && isLoginPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
