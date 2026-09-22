@@ -50,6 +50,13 @@ export function peutValider(role: UserRole | null | undefined): boolean {
   return NIVEAU_ROLE[role] >= NIVEAU_ROLE.responsable;
 }
 
+// Édition du référentiel Marques & Modèles (renommer, supprimer, prix VN) :
+// responsable et au-dessus. Miroir des policies RLS de 0013
+// (current_role_niveau() >= role_niveau('responsable')) — affichage seulement.
+export function peutEditerReferentiel(role: UserRole | null | undefined): boolean {
+  return peutValider(role);
+}
+
 // Miroir de la policy RLS "vv_calculations_insert" (0007) : une révision
 // n'est acceptée que si le rang du demandeur est STRICTEMENT supérieur à
 // celui du validateur d'origine. Affichage uniquement — le vrai contrôle

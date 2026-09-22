@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { nettoyer } from "@/lib/referentiel-vehicules";
+import VehiculePicker from "./vehicule-picker";
 import {
   calculerValeurVenale,
   categoriesDisponibles,
@@ -64,6 +66,9 @@ export interface CalculExistant {
   entretien: Entretien;
   correctifCommercialPct: number;
   referenceDossierExterne: string | null;
+  marque: string | null;
+  modele: string | null;
+  immatriculation: string | null;
 }
 
 interface Props {
@@ -89,6 +94,12 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
   const [valeurNeuve, setValeurNeuve] = useState(
     calculExistant ? String(calculExistant.valeurNeuve) : ""
   );
+  const [marque, setMarque] = useState(calculExistant?.marque ?? "");
+  const [modele, setModele] = useState(calculExistant?.modele ?? "");
+  // Suggestion de VN issue du référentiel (Sprint 14) : jamais appliquée sur
+  // une valeur déjà saisie par l'utilisateur.
+  const [vnSuggere, setVnSuggere] = useState<number | null>(null);
+  const [libelleSuggestion, setLibelleSuggestion] = useState("");
   const [dateMiseCirculation, setDateMiseCirculation] = useState(
     calculExistant?.dateMiseCirculation ?? ""
   );
@@ -135,6 +146,24 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
     }
   }, [categorieEstCommerciale]);
 
+  // Le sélecteur signale un couple marque/modèle reconnu et son prix VN de
+  // référence. On ne pré-remplit que si le champ est vide, ou s'il contient
+  // encore notre propre suggestion précédente — jamais une valeur saisie.
+  const suggererVN = useCallback(
+    (vn: number | null, libelle: string) => {
+      if (vn === null) return;
+      const vide = valeurNeuve.trim() === "";
+      const suggestionIntacte = vnSuggere !== null && valeurNeuve === String(vnSuggere);
+      if (vide || suggestionIntacte) {
+        setValeurNeuve(String(vn));
+        setVnSuggere(vn);
+        setLibelleSuggestion(libelle);
+      }
+    },
+    [valeurNeuve, vnSuggere]
+  );
+  const suggestionAffichee = vnSuggere !== null && valeurNeuve === String(vnSuggere);
+
   function handleBaremeChange(version: BaremeVersion) {
     setBaremeVersion(version);
     const options = categoriesDisponibles(version);
@@ -170,6 +199,8 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
 
       const champsCalcul = {
         reference_dossier_externe: referenceDossierExterne || null,
+        marque: nettoyer(marque) || null,
+        modele: nettoyer(modele) || null,
         valeur_neuve: params.valeurNeuve,
         date_mise_circulation: dateMiseCirculation,
         date_sinistre: dateSinistre,
@@ -218,7 +249,14 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
       if (mode === "reviser" && calculExistant) {
         const { data: nouvelleLigne, error } = await supabase
           .from("vv_calculations")
-          .insert({ ...champsCalcul, created_by: userId, revision_de: calculExistant.id })
+          .insert({
+            ...champsCalcul,
+            // L'immatriculation n'est pas modifiable ici mais doit suivre la
+            // révision (sinon la nouvelle ligne la perdrait).
+            immatriculation: calculExistant.immatriculation,
+            created_by: userId,
+            revision_de: calculExistant.id,
+          })
           .select("id")
           .single();
 
@@ -313,9 +351,20 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
             />
           </div>
 
+          <VehiculePicker
+            marque={marque}
+            modele={modele}
+            onMarque={setMarque}
+            onModele={setModele}
+            onModeleReconnu={suggererVN}
+          />
+
           <div>
-            <label className="mb-1 block text-sm text-ink">Valeur à neuf (DH)</label>
+            <label htmlFor="vv-valeur-neuf" className="mb-1 block text-sm text-ink">
+              Valeur à neuf (DH)
+            </label>
             <input
+              id="vv-valeur-neuf"
               type="number"
               required
               min={0}
@@ -324,6 +373,11 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
               onChange={(e) => setValeurNeuve(e.target.value)}
               className={CHAMP}
             />
+            {suggestionAffichee && (
+              <p data-testid="suggestion-vn" className="mt-1 text-xs text-slate">
+                Suggestion du référentiel ({libelleSuggestion}) — modifiable.
+              </p>
+            )}
           </div>
 
           <div>

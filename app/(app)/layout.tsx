@@ -2,6 +2,7 @@ import Link from "next/link";
 import LogoutButton from "./logout-button";
 import Logo from "../_components/logo";
 import { createClient } from "@/lib/supabase/server";
+import { peutEditerReferentiel, type UserRole } from "@/lib/roles";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Le lien "Comptes" n'est qu'un confort d'affichage : la page et les
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ? await supabase.from("profiles").select("role").eq("id", user.id).single()
     : { data: null };
   const estAdmin = profil?.role === "admin_technique";
+  const peutReferentiel = peutEditerReferentiel(profil?.role as UserRole | undefined);
 
   return (
     <div className="min-h-screen">
@@ -23,6 +25,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Logo />
           </Link>
           <nav className="flex items-center gap-5">
+            {peutReferentiel && (
+              <Link href="/referentiel" className="text-sm text-slate underline hover:text-ink">
+                Marques &amp; Modèles
+              </Link>
+            )}
             {estAdmin && (
               <Link href="/comptes" className="text-sm text-slate underline hover:text-ink">
                 Comptes

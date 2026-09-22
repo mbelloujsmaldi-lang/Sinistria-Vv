@@ -56,6 +56,9 @@ export default async function ModifierCalculVVPage({
     entretien: calcul.entretien,
     correctifCommercialPct: Number(calcul.correctif_commercial_pct ?? 0),
     referenceDossierExterne: calcul.reference_dossier_externe,
+    marque: calcul.marque ?? null,
+    modele: calcul.modele ?? null,
+    immatriculation: calcul.immatriculation ?? null,
   };
 
   if (calcul.statut !== "valide") {
