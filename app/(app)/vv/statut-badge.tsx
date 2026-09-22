@@ -1,4 +1,4 @@
-const LABELS_STATUT: Record<string, string> = {
+export const LABELS_STATUT: Record<string, string> = {
   calcule: "Calculé",
   soumis: "Soumis à validation",
   valide: "Validé",

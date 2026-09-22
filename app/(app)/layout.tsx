@@ -26,6 +26,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Logo />
           </Link>
           <nav className="flex items-center gap-5">
+            {user && (
+              <Link href="/analyse/dashboard" className="text-sm text-slate underline hover:text-ink">
+                Analyse
+              </Link>
+            )}
             {peutReferentiel && (
               <Link href="/referentiel" className="text-sm text-slate underline hover:text-ink">
                 Marques &amp; Modèles
