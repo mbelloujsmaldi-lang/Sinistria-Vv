@@ -72,6 +72,27 @@ export interface CalculExistant {
   immatriculation: string | null;
 }
 
+// Sprint 18 : pré-remplissage initial depuis le simulateur "Et si ?"
+// (mode reste "creer" — un point de départ, pas un calcul existant à
+// modifier/réviser). Sous-ensemble de CalculExistant : pas d'id, de
+// référence ni de valeurCalculee, puisque rien n'a encore été calculé
+// ni enregistré.
+export type ValeursInitiales = Partial<
+  Pick<
+    CalculExistant,
+    | "baremeVersion"
+    | "categorie"
+    | "carburant"
+    | "puissanceFiscale"
+    | "valeurNeuve"
+    | "dateMiseCirculation"
+    | "dateSinistre"
+    | "kilometrageTotal"
+    | "typeKilometrage"
+    | "entretien"
+  >
+>;
+
 interface Props {
   userId: string;
   // Rôle au moment de l'action, figé dans vv_calculations_historique
@@ -80,24 +101,37 @@ interface Props {
   role?: UserRole | null;
   mode?: "creer" | "modifier" | "reviser";
   calculExistant?: CalculExistant;
+  valeursInitiales?: ValeursInitiales;
 }
 
-export default function FormulaireVV({ userId, role = null, mode = "creer", calculExistant }: Props) {
+export default function FormulaireVV({
+  userId,
+  role = null,
+  mode = "creer",
+  calculExistant,
+  valeursInitiales,
+}: Props) {
   const supabase = createClient();
   const router = useRouter();
 
   const [baremeVersion, setBaremeVersion] = useState<BaremeVersion>(
-    calculExistant?.baremeVersion ?? "2023"
+    calculExistant?.baremeVersion ?? valeursInitiales?.baremeVersion ?? "2023"
   );
   const [categorie, setCategorie] = useState<CategorieVehicule>(
-    calculExistant?.categorie ?? "leger_pu7_particulier"
+    calculExistant?.categorie ?? valeursInitiales?.categorie ?? "leger_pu7_particulier"
   );
-  const [carburant, setCarburant] = useState<Carburant>(calculExistant?.carburant ?? "diesel");
+  const [carburant, setCarburant] = useState<Carburant>(
+    calculExistant?.carburant ?? valeursInitiales?.carburant ?? "diesel"
+  );
   const [puissanceFiscale, setPuissanceFiscale] = useState(
-    String(calculExistant?.puissanceFiscale ?? 6)
+    String(calculExistant?.puissanceFiscale ?? valeursInitiales?.puissanceFiscale ?? 6)
   );
   const [valeurNeuve, setValeurNeuve] = useState(
-    calculExistant ? String(calculExistant.valeurNeuve) : ""
+    calculExistant
+      ? String(calculExistant.valeurNeuve)
+      : valeursInitiales?.valeurNeuve !== undefined
+        ? String(valeursInitiales.valeurNeuve)
+        : ""
   );
   const [marque, setMarque] = useState(calculExistant?.marque ?? "");
   const [modele, setModele] = useState(calculExistant?.modele ?? "");
@@ -106,22 +140,31 @@ export default function FormulaireVV({ userId, role = null, mode = "creer", calc
   const [vnSuggere, setVnSuggere] = useState<number | null>(null);
   const [libelleSuggestion, setLibelleSuggestion] = useState("");
   const [dateMiseCirculation, setDateMiseCirculation] = useState(
-    calculExistant?.dateMiseCirculation ?? ""
+    calculExistant?.dateMiseCirculation ?? valeursInitiales?.dateMiseCirculation ?? ""
   );
   const [dateSinistre, setDateSinistre] = useState(
-    () => calculExistant?.dateSinistre ?? new Date().toISOString().slice(0, 10)
+    () =>
+      calculExistant?.dateSinistre ??
+      valeursInitiales?.dateSinistre ??
+      new Date().toISOString().slice(0, 10)
   );
   const [referenceDossierExterne, setReferenceDossierExterne] = useState(
     calculExistant?.referenceDossierExterne ?? ""
   );
 
   const [kilometrageTotal, setKilometrageTotal] = useState(
-    calculExistant?.kilometrageTotal != null ? String(calculExistant.kilometrageTotal) : ""
+    calculExistant?.kilometrageTotal != null
+      ? String(calculExistant.kilometrageTotal)
+      : valeursInitiales?.kilometrageTotal != null
+        ? String(valeursInitiales.kilometrageTotal)
+        : ""
   );
   const [typeKilometrage, setTypeKilometrage] = useState<TypeKilometrage>(
-    calculExistant?.typeKilometrage ?? "standard"
+    calculExistant?.typeKilometrage ?? valeursInitiales?.typeKilometrage ?? "standard"
   );
-  const [entretien, setEntretien] = useState<Entretien>(calculExistant?.entretien ?? "aucun");
+  const [entretien, setEntretien] = useState<Entretien>(
+    calculExistant?.entretien ?? valeursInitiales?.entretien ?? "aucun"
+  );
   const [correctifCommercialPct, setCorrectifCommercialPct] = useState(
     String(calculExistant?.correctifCommercialPct ?? 0)
   );

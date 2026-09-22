@@ -31,6 +31,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 Analyse
               </Link>
             )}
+            {user && (
+              <Link href="/analyse/simulateur" className="text-sm text-slate underline hover:text-ink">
+                Simulateur
+              </Link>
+            )}
             {peutReferentiel && (
               <Link href="/referentiel" className="text-sm text-slate underline hover:text-ink">
                 Marques &amp; Modèles
