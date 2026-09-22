@@ -119,6 +119,21 @@ export function categoriesDisponibles(version: BaremeVersion): CategorieVehicule
   return Object.keys(BAREME[version]) as CategorieVehicule[];
 }
 
+// Accès en lecture aux taux des 5 premières années (catégorie + carburant,
+// selon le barème) — SEULE source de vérité pour ces chiffres, déjà
+// validée par test-calcul-vv.ts contre les 4 exemples officiels FMSAR.
+// N'expose pas BAREME lui-même (forme interne, potentiellement partielle) :
+// export minimal pour que la page /analyse/coefficients (Sprint 19)
+// réutilise exactement ces taux, sans jamais les redupliquer.
+export function tauxCinqAns(
+  version: BaremeVersion,
+  categorie: CategorieVehicule,
+  carburant: Carburant
+): number[] | null {
+  const tauxCategorie = BAREME[version]?.[categorie];
+  return tauxCategorie ? tauxCategorie[carburant] : null;
+}
+
 // Le correctif commercial (document FMSAR, "Véhicules utilitaires et
 // commerciales") est réservé aux catégories "location"/utilitaires et aux
 // véhicules lourds — jamais aux particuliers ni aux motocycles.
@@ -126,7 +141,13 @@ export function categorieEstCommerciale(categorie: CategorieVehicule): boolean {
   return categorie !== "motocycle" && !categorie.endsWith("_particulier");
 }
 
-function tauxPourAnnee(taux5ans: number[], annee: number): number {
+// Règle de plateau (document FMSAR) : taux nominal les années 1 à 5, taux
+// de l'année 5 reconduit jusqu'à l'année 10, puis 5%/an au-delà de la 10e.
+// Exportée telle quelle pour /analyse/coefficients (Sprint 19) — c'est le
+// taux NOMINAL de l'année, pas le prorata mensuel ni le plancher de 5%
+// appliqué en 1ère année par calculerValeurVenale() pour un sinistre réel
+// (règle propre au calcul réel, étrangère à cette table illustrative).
+export function tauxPourAnnee(taux5ans: number[], annee: number): number {
   if (annee <= 5) return taux5ans[annee - 1];
   if (annee <= 10) return taux5ans[4];
   return 0.05;
