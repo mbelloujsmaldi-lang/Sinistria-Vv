@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ROLES, type UserRole } from "@/lib/roles";
-import { acteurAdminTechnique, BAN_DEFINITIF, REGEX_UUID } from "@/lib/comptes";
+import { acteurAdminTechnique, BAN_DEFINITIF, journaliser, REGEX_UUID } from "@/lib/comptes";
+import { LABELS_ROLE } from "@/lib/roles";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -29,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
   const { data: cible } = await supabase
     .from("profiles")
-    .select("id, role, actif, chef_hierarchique_id")
+    .select("id, role, actif, chef_hierarchique_id, nom")
     .eq("id", id)
     .single();
   if (!cible) return NextResponse.json({ erreur: "Compte introuvable." }, { status: 404 });
@@ -131,6 +132,16 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     return NextResponse.json({ erreur: "Modification refusée." }, { status: 403 });
   }
 
+  if (changeRole && patch.role) {
+    await journaliser({
+      acteur,
+      action: "Changement de rôle",
+      ancienneValeur: LABELS_ROLE[cible.role as UserRole],
+      nouvelleValeur: LABELS_ROLE[patch.role],
+      observation: `${cible.nom} (compte modifié)`,
+    });
+  }
+
   // Désactivation effective : blocage côté Auth (plus de connexion ni de
   // renouvellement de session). Si cela échoue, on annule le changement de
   // statut pour ne jamais afficher « désactivé » un compte encore utilisable.
@@ -145,6 +156,11 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
         { status: 502 }
       );
     }
+    await journaliser({
+      acteur,
+      action: patch.actif ? "Compte réactivé" : "Compte désactivé",
+      observation: `${cible.nom} (compte modifié)`,
+    });
   }
 
   return NextResponse.json(maj);

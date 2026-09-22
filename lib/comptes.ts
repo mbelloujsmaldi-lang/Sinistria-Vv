@@ -1,10 +1,11 @@
 import { randomInt } from "crypto";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { UserRole } from "@/lib/roles";
 
 // Console "Comptes" (Sprint 13) — helpers serveur uniquement.
 
-export type Acteur = { id: string; role: UserRole };
+export type Acteur = { id: string; role: UserRole; nom: string };
 
 // Garde partagée par la page /comptes et toutes les routes /api/comptes :
 // renvoie l'utilisateur connecté seulement s'il est admin_technique ET actif,
@@ -20,12 +21,38 @@ export async function acteurAdminTechnique(): Promise<Acteur | null> {
 
   const { data: profil } = await supabase
     .from("profiles")
-    .select("role, actif")
+    .select("role, actif, nom")
     .eq("id", user.id)
     .single();
 
   if (!profil || !profil.actif || profil.role !== "admin_technique") return null;
-  return { id: user.id, role: profil.role as UserRole };
+  return { id: user.id, role: profil.role as UserRole, nom: profil.nom };
+}
+
+// Écrit une ligne dans journal_audit (Sprint 15) — toujours via le client
+// admin (RLS n'autorise aucune écriture authentifiée sur cette table, par
+// conception). Comme l'ancien auditLog_ : l'audit ne doit JAMAIS faire
+// échouer l'action appelante — erreurs avalées silencieusement.
+export async function journaliser(entree: {
+  acteur: Acteur;
+  action: string;
+  ancienneValeur?: string | null;
+  nouvelleValeur?: string | null;
+  observation?: string | null;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    await admin.from("journal_audit").insert({
+      utilisateur_id: entree.acteur.id,
+      utilisateur_label: entree.acteur.nom,
+      action: entree.action,
+      ancienne_valeur: entree.ancienneValeur ?? null,
+      nouvelle_valeur: entree.nouvelleValeur ?? null,
+      observation: entree.observation ?? null,
+    });
+  } catch {
+    // volontaire : voir commentaire ci-dessus.
+  }
 }
 
 const MAJ = "ABCDEFGHJKLMNPQRSTUVWXYZ";

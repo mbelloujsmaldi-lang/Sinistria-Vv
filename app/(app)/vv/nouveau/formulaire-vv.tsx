@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { nettoyer } from "@/lib/referentiel-vehicules";
 import VehiculePicker from "./vehicule-picker";
+import type { UserRole } from "@/lib/roles";
 import {
   calculerValeurVenale,
   categoriesDisponibles,
@@ -73,11 +74,15 @@ export interface CalculExistant {
 
 interface Props {
   userId: string;
+  // Rôle au moment de l'action, figé dans vv_calculations_historique
+  // (Sprint 15). Nullable : un profil peut ne pas encore avoir de rôle
+  // résolu (ne devrait pas arriver en pratique, RLS l'exige déjà ailleurs).
+  role?: UserRole | null;
   mode?: "creer" | "modifier" | "reviser";
   calculExistant?: CalculExistant;
 }
 
-export default function FormulaireVV({ userId, mode = "creer", calculExistant }: Props) {
+export default function FormulaireVV({ userId, role = null, mode = "creer", calculExistant }: Props) {
   const supabase = createClient();
   const router = useRouter();
 
@@ -236,6 +241,7 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
         await supabase.from("vv_calculations_historique").insert({
           vv_calculation_id: calculExistant.id,
           utilisateur_id: userId,
+          role_utilisateur: role,
           action: "Modification",
           ancienne_valeur: calculExistant.valeurCalculee,
           nouvelle_valeur: r.vvadeFinale,
@@ -268,6 +274,7 @@ export default function FormulaireVV({ userId, mode = "creer", calculExistant }:
         await supabase.from("vv_calculations_historique").insert({
           vv_calculation_id: nouvelleLigne.id,
           utilisateur_id: userId,
+          role_utilisateur: role,
           action: "Révision",
           ancienne_valeur: calculExistant.valeurCalculee,
           nouvelle_valeur: r.vvadeFinale,

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import FormulaireVV from "./formulaire-vv";
+import type { UserRole } from "@/lib/roles";
 
 export default async function NouveauCalculVVPage() {
   const supabase = await createClient();
@@ -13,6 +14,12 @@ export default async function NouveauCalculVVPage() {
     redirect("/login");
   }
 
+  const { data: profil } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <h1 className="mb-1 text-lg font-medium text-ink">Nouveau calcul de valeur vénale</h1>
@@ -21,7 +28,7 @@ export default async function NouveauCalculVVPage() {
         l&apos;enregistrer.
       </p>
 
-      <FormulaireVV userId={user.id} />
+      <FormulaireVV userId={user.id} role={profil?.role as UserRole | undefined} />
 
       <p className="mt-8 text-xs text-slate">
         <a href="/dashboard" className="underline hover:text-ink">

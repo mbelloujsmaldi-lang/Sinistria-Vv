@@ -56,6 +56,7 @@ export default function ActionsVV({
     await supabase.from("vv_calculations_historique").insert({
       vv_calculation_id: calculId,
       utilisateur_id: userId,
+      role_utilisateur: role,
       action: "Soumission à validation",
     });
 
@@ -94,6 +95,7 @@ export default function ActionsVV({
     await supabase.from("vv_calculations_historique").insert({
       vv_calculation_id: calculId,
       utilisateur_id: userId,
+      role_utilisateur: role,
       action: "Validation",
       ancienne_valeur: valeurCalculee,
       nouvelle_valeur: vd,
@@ -126,6 +128,7 @@ export default function ActionsVV({
     await supabase.from("vv_calculations_historique").insert({
       vv_calculation_id: calculId,
       utilisateur_id: userId,
+      role_utilisateur: role,
       action: "Retour pour correction",
       observation: motifRejet,
     });

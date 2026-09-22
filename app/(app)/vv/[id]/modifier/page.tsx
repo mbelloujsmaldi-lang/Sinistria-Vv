@@ -77,7 +77,12 @@ export default async function ModifierCalculVVPage({
           Les valeurs sont mises à jour sur cette même ligne — le calcul n&apos;étant pas
           encore validé, aucune révision n&apos;est nécessaire.
         </p>
-        <FormulaireVV userId={user.id} mode="modifier" calculExistant={calculExistant} />
+        <FormulaireVV
+          userId={user.id}
+          role={profil?.role as UserRole | undefined}
+          mode="modifier"
+          calculExistant={calculExistant}
+        />
       </main>
     );
   }
@@ -104,7 +109,12 @@ export default async function ModifierCalculVVPage({
         Ce calcul est déjà validé — une nouvelle ligne de révision sera créée à la
         soumission. La ligne originale ({calcul.reference}) reste intacte et consultable.
       </p>
-      <FormulaireVV userId={user.id} mode="reviser" calculExistant={calculExistant} />
+      <FormulaireVV
+        userId={user.id}
+        role={profil?.role as UserRole | undefined}
+        mode="reviser"
+        calculExistant={calculExistant}
+      />
     </main>
   );
 }
