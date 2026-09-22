@@ -10,6 +10,13 @@ export default async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // httpOnly (Sprint 22) : appel createServerClient totalement séparé de
+      // lib/supabase/server.ts (contexte middleware, pas Server Component) —
+      // le même cookieOptions doit être répété ici, sinon le rafraîchissement
+      // du jeton que ce proxy déclenche à chaque requête réécrirait le
+      // cookie en httpOnly:false (DEFAULT_COOKIE_OPTIONS), annulant la
+      // protection posée à la connexion.
+      cookieOptions: { httpOnly: true, secure: true },
       cookies: {
         getAll() {
           return request.cookies.getAll();
