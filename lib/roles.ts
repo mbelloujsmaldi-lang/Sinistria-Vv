@@ -64,6 +64,13 @@ export function peutConsulterAudit(role: UserRole | null | undefined): boolean {
   return peutValider(role);
 }
 
+// Support technique (Sprint 23) : admin_technique EXCLUSIVEMENT — palier
+// différent de peutValider (responsable et au-dessus), décision explicite
+// du sprint. Miroir de la RLS "support_messages_update_admin" (0018).
+export function peutGererSupport(role: UserRole | null | undefined): boolean {
+  return role === "admin_technique";
+}
+
 // Miroir de la policy RLS "vv_calculations_insert" (0007) : une révision
 // n'est acceptée que si le rang du demandeur est STRICTEMENT supérieur à
 // celui du validateur d'origine. Affichage uniquement — le vrai contrôle

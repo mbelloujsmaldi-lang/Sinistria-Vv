@@ -56,6 +56,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 Journal d&apos;audit
               </Link>
             )}
+            {user && (
+              <Link href="/aide-support" className="text-sm text-slate underline hover:text-ink">
+                Aide &amp; Support
+              </Link>
+            )}
             <LogoutButton />
           </nav>
         </div>
