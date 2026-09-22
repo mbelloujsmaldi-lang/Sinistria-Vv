@@ -1,14 +1,17 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import {
-  cle,
-  depuisLignes,
-  nettoyer,
-  SELECT_REFERENTIEL,
-  type MarqueRef,
-} from "@/lib/referentiel-vehicules";
+  ajouterMarque as ajouterMarqueAction,
+  ajouterModele as ajouterModeleAction,
+  chargerReferentiel,
+  enregistrerVN as enregistrerVNAction,
+  renommerMarque as renommerMarqueAction,
+  renommerModele as renommerModeleAction,
+  supprimerMarque as supprimerMarqueAction,
+  supprimerModele as supprimerModeleAction,
+} from "./referentiel-actions";
+import { cle, depuisLignes, nettoyer, type MarqueRef } from "@/lib/referentiel-vehicules";
 
 const CHAMP =
   "w-full rounded border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal";
@@ -19,7 +22,6 @@ const LIEN = "text-sm underline disabled:opacity-50";
 type Retour = { error: { code?: string; message: string } | null; data: unknown[] | null };
 
 export default function ReferentielClient({ marquesInitiales }: { marquesInitiales: MarqueRef[] }) {
-  const supabase = useMemo(() => createClient(), []);
   const [marques, setMarques] = useState(marquesInitiales);
   const [selectionId, setSelectionId] = useState<string | null>(marquesInitiales[0]?.id ?? null);
   const [recherche, setRecherche] = useState("");
@@ -40,16 +42,13 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
   }, [marques, recherche]);
 
   const recharger = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("vehicule_marques")
-      .select(SELECT_REFERENTIEL)
-      .order("nom");
+    const { data, error } = await chargerReferentiel();
     if (error) {
       setMessage({ type: "erreur", texte: "Rechargement impossible : " + error.message });
       return;
     }
     setMarques(depuisLignes(data as Parameters<typeof depuisLignes>[0]));
-  }, [supabase]);
+  }, []);
 
   // Une écriture refusée par la RLS ne renvoie pas d'erreur mais 0 ligne :
   // on le détecte pour ne jamais afficher un succès qui n'a pas eu lieu.
@@ -78,28 +77,19 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
     e.preventDefault();
     const nom = nettoyer(nouvelleMarque);
     if (!nom) return;
-    const ok = await executer(
-      () => supabase.from("vehicule_marques").insert({ nom }).select("id"),
-      `Marque ajoutée : ${nom}`
-    );
+    const ok = await executer(() => ajouterMarqueAction(nom), `Marque ajoutée : ${nom}`);
     if (ok) setNouvelleMarque("");
   }
 
   async function renommerMarque(m: MarqueRef) {
     const nom = nettoyer(window.prompt("Renommer la marque :", m.nom));
     if (!nom || nom === m.nom) return;
-    await executer(
-      () => supabase.from("vehicule_marques").update({ nom }).eq("id", m.id).select("id"),
-      "Marque renommée."
-    );
+    await executer(() => renommerMarqueAction(m.id, nom), "Marque renommée.");
   }
 
   async function supprimerMarque(m: MarqueRef) {
     if (!window.confirm(`Supprimer la marque ${m.nom} et ses ${m.modeles.length} modèle(s) ?`)) return;
-    const ok = await executer(
-      () => supabase.from("vehicule_marques").delete().eq("id", m.id).select("id"),
-      `Marque supprimée : ${m.nom}`
-    );
+    const ok = await executer(() => supprimerMarqueAction(m.id), `Marque supprimée : ${m.nom}`);
     if (ok && selectionId === m.id) setSelectionId(null);
   }
 
@@ -108,7 +98,7 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
     const nom = nettoyer(nouveauModele);
     if (!nom || !selection) return;
     const ok = await executer(
-      () => supabase.from("vehicule_modeles").insert({ marque_id: selection.id, nom }).select("id"),
+      () => ajouterModeleAction(selection.id, nom),
       `Modèle ajouté : ${nom}`
     );
     if (ok) setNouveauModele("");
@@ -117,18 +107,12 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
   async function renommerModele(id: string, ancien: string) {
     const nom = nettoyer(window.prompt("Renommer le modèle :", ancien));
     if (!nom || nom === ancien) return;
-    await executer(
-      () => supabase.from("vehicule_modeles").update({ nom }).eq("id", id).select("id"),
-      "Modèle renommé."
-    );
+    await executer(() => renommerModeleAction(id, nom), "Modèle renommé.");
   }
 
   async function supprimerModele(id: string, nom: string) {
     if (!window.confirm(`Supprimer le modèle ${nom} ?`)) return;
-    await executer(
-      () => supabase.from("vehicule_modeles").delete().eq("id", id).select("id"),
-      `Modèle supprimé : ${nom}`
-    );
+    await executer(() => supprimerModeleAction(id), `Modèle supprimé : ${nom}`);
   }
 
   async function enregistrerVN(id: string, ancien: number | null, saisie: string, champ: HTMLInputElement) {
@@ -141,7 +125,7 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
     }
     if (valeur === ancien) return;
     const ok = await executer(
-      () => supabase.from("vehicule_modeles").update({ vn_reference: valeur }).eq("id", id).select("id"),
+      () => enregistrerVNAction(id, valeur),
       valeur === null ? "Valeur à neuf de référence retirée." : "Valeur à neuf de référence enregistrée."
     );
     if (!ok) champ.value = ancien === null ? "" : String(ancien);

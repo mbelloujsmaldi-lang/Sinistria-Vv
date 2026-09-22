@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import {
+  ajouterMarque as ajouterMarqueAction,
+  ajouterModele as ajouterModeleAction,
+  chargerReferentiel,
+} from "./vehicule-picker-actions";
 import {
   depuisLignes,
   nettoyer,
-  SELECT_REFERENTIEL,
   trouverMarque,
   trouverModele,
   type MarqueRef,
@@ -33,7 +36,6 @@ interface Props {
 // Tout profil actif peut ajouter ; renommer/supprimer/prix VN restent
 // réservés aux responsables et au-dessus (RLS, migration 0013).
 export default function VehiculePicker({ marque, modele, onMarque, onModele, onModeleReconnu }: Props) {
-  const supabase = useMemo(() => createClient(), []);
   const [marques, setMarques] = useState<MarqueRef[]>([]);
   const [charge, setCharge] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -41,18 +43,15 @@ export default function VehiculePicker({ marque, modele, onMarque, onModele, onM
   const [occupe, setOccupe] = useState(false);
 
   const charger = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("vehicule_marques")
-      .select(SELECT_REFERENTIEL)
-      .order("nom");
-    if (error) {
+    const { data, erreur: erreurRequete } = await chargerReferentiel();
+    if (erreurRequete) {
       setErreur("Référentiel indisponible : la marque et le modèle seront enregistrés tels que saisis.");
     } else {
       setMarques(depuisLignes(data as Parameters<typeof depuisLignes>[0]));
       setErreur(null);
     }
     setCharge(true);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     charger();
@@ -85,7 +84,7 @@ export default function VehiculePicker({ marque, modele, onMarque, onModele, onM
     if (!nom) return;
     setOccupe(true);
     setErreur(null);
-    const { error } = await supabase.from("vehicule_marques").insert({ nom });
+    const { erreur: error } = await ajouterMarqueAction(nom);
     setOccupe(false);
     if (error && error.code !== "23505") {
       setErreur(`Ajout impossible : ${error.message}`);
@@ -101,9 +100,7 @@ export default function VehiculePicker({ marque, modele, onMarque, onModele, onM
     if (!nom || !marqueRef) return;
     setOccupe(true);
     setErreur(null);
-    const { error } = await supabase
-      .from("vehicule_modeles")
-      .insert({ marque_id: marqueRef.id, nom });
+    const { erreur: error } = await ajouterModeleAction(marqueRef.id, nom);
     setOccupe(false);
     if (error && error.code !== "23505") {
       setErreur(`Ajout impossible : ${error.message}`);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { creerCalcul, modifierCalcul, reviserCalcul } from "./formulaire-vv-actions";
 import { nettoyer } from "@/lib/referentiel-vehicules";
 import VehiculePicker from "./vehicule-picker";
 import type { UserRole } from "@/lib/roles";
@@ -111,7 +111,6 @@ export default function FormulaireVV({
   calculExistant,
   valeursInitiales,
 }: Props) {
-  const supabase = createClient();
   const router = useRouter();
 
   const [baremeVersion, setBaremeVersion] = useState<BaremeVersion>(
@@ -271,24 +270,16 @@ export default function FormulaireVV({
       };
 
       if (mode === "modifier" && calculExistant) {
-        const { error } = await supabase
-          .from("vv_calculations")
-          .update(champsCalcul)
-          .eq("id", calculExistant.id);
+        const { erreur: erreurAction } = await modifierCalcul(
+          calculExistant.id,
+          champsCalcul,
+          calculExistant.valeurCalculee
+        );
 
-        if (error) {
-          setErreur(`Calcul effectué mais non enregistré : ${error.message}`);
+        if (erreurAction) {
+          setErreur(erreurAction);
           return;
         }
-
-        await supabase.from("vv_calculations_historique").insert({
-          vv_calculation_id: calculExistant.id,
-          utilisateur_id: userId,
-          role_utilisateur: role,
-          action: "Modification",
-          ancienne_valeur: calculExistant.valeurCalculee,
-          nouvelle_valeur: r.vvadeFinale,
-        });
 
         router.push(`/vv/${calculExistant.id}`);
         router.refresh();
@@ -296,45 +287,28 @@ export default function FormulaireVV({
       }
 
       if (mode === "reviser" && calculExistant) {
-        const { data: nouvelleLigne, error } = await supabase
-          .from("vv_calculations")
-          .insert({
-            ...champsCalcul,
-            // L'immatriculation n'est pas modifiable ici mais doit suivre la
-            // révision (sinon la nouvelle ligne la perdrait).
-            immatriculation: calculExistant.immatriculation,
-            created_by: userId,
-            revision_de: calculExistant.id,
-          })
-          .select("id")
-          .single();
+        const { erreur: erreurAction, id } = await reviserCalcul(
+          calculExistant.id,
+          calculExistant.reference,
+          calculExistant.immatriculation,
+          champsCalcul,
+          calculExistant.valeurCalculee
+        );
 
-        if (error || !nouvelleLigne) {
-          setErreur(`Calcul effectué mais non enregistré : ${error?.message ?? "erreur inconnue"}`);
+        if (erreurAction || !id) {
+          setErreur(erreurAction ?? "Erreur inconnue.");
           return;
         }
 
-        await supabase.from("vv_calculations_historique").insert({
-          vv_calculation_id: nouvelleLigne.id,
-          utilisateur_id: userId,
-          role_utilisateur: role,
-          action: "Révision",
-          ancienne_valeur: calculExistant.valeurCalculee,
-          nouvelle_valeur: r.vvadeFinale,
-          observation: `Révision de ${calculExistant.reference}`,
-        });
-
-        router.push(`/vv/${nouvelleLigne.id}`);
+        router.push(`/vv/${id}`);
         router.refresh();
         return;
       }
 
-      const { error } = await supabase
-        .from("vv_calculations")
-        .insert({ ...champsCalcul, created_by: userId });
+      const { erreur: erreurAction } = await creerCalcul(champsCalcul);
 
-      if (error) {
-        setErreur(`Calcul effectué mais non enregistré : ${error.message}`);
+      if (erreurAction) {
+        setErreur(erreurAction);
       } else {
         setEnregistre(true);
       }

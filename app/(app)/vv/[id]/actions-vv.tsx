@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { soumettre as soumettreAction, valider as validerAction, rejeter as rejeterAction } from "./server-actions";
 import { peutValider, type UserRole } from "@/lib/roles";
 
 const CHAMP =
@@ -25,7 +25,6 @@ export default function ActionsVV({
   userId,
   role,
 }: Props) {
-  const supabase = createClient();
   const router = useRouter();
 
   const [chargement, setChargement] = useState(false);
@@ -38,27 +37,13 @@ export default function ActionsVV({
   async function soumettre() {
     setErreur(null);
     setChargement(true);
-    const { error } = await supabase
-      .from("vv_calculations")
-      .update({
-        statut: "soumis",
-        soumis_par: userId,
-        soumis_le: new Date().toISOString(),
-      })
-      .eq("id", calculId);
+    const { erreur: erreurAction } = await soumettreAction(calculId);
 
-    if (error) {
-      setErreur(error.message);
+    if (erreurAction) {
+      setErreur(erreurAction);
       setChargement(false);
       return;
     }
-
-    await supabase.from("vv_calculations_historique").insert({
-      vv_calculation_id: calculId,
-      utilisateur_id: userId,
-      role_utilisateur: role,
-      action: "Soumission à validation",
-    });
 
     setChargement(false);
     router.refresh();
@@ -69,38 +54,13 @@ export default function ActionsVV({
     setChargement(true);
 
     const vd = Number(valeurDefinitive);
-    const ecartDh = Math.round((vd - valeurCalculee) * 100) / 100;
-    const ecartPct =
-      valeurCalculee !== 0 ? Math.round((ecartDh / valeurCalculee) * 10000) / 100 : 0;
+    const { erreur: erreurAction } = await validerAction(calculId, valeurCalculee, vd, justification);
 
-    const { error } = await supabase
-      .from("vv_calculations")
-      .update({
-        statut: "valide",
-        valeur_definitive: vd,
-        ecart_dh: ecartDh,
-        ecart_pct: ecartPct,
-        justification_ecart: justification || null,
-        validee_par: userId,
-        valide_le: new Date().toISOString(),
-      })
-      .eq("id", calculId);
-
-    if (error) {
-      setErreur(error.message);
+    if (erreurAction) {
+      setErreur(erreurAction);
       setChargement(false);
       return;
     }
-
-    await supabase.from("vv_calculations_historique").insert({
-      vv_calculation_id: calculId,
-      utilisateur_id: userId,
-      role_utilisateur: role,
-      action: "Validation",
-      ancienne_valeur: valeurCalculee,
-      nouvelle_valeur: vd,
-      observation: justification || null,
-    });
 
     setChargement(false);
     router.refresh();
@@ -114,24 +74,13 @@ export default function ActionsVV({
     setErreur(null);
     setChargement(true);
 
-    const { error } = await supabase
-      .from("vv_calculations")
-      .update({ statut: "rejete", motif_rejet: motifRejet })
-      .eq("id", calculId);
+    const { erreur: erreurAction } = await rejeterAction(calculId, motifRejet);
 
-    if (error) {
-      setErreur(error.message);
+    if (erreurAction) {
+      setErreur(erreurAction);
       setChargement(false);
       return;
     }
-
-    await supabase.from("vv_calculations_historique").insert({
-      vv_calculation_id: calculId,
-      utilisateur_id: userId,
-      role_utilisateur: role,
-      action: "Retour pour correction",
-      observation: motifRejet,
-    });
 
     setChargement(false);
     router.refresh();
