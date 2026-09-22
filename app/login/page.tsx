@@ -1,55 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useActionState, useEffect, useState } from "react";
+import { connecter, type EtatConnexion } from "./actions";
 import Logo from "../_components/logo";
 
+const ETAT_INITIAL: EtatConnexion = { erreur: null };
+
 export default function LoginPage() {
-  const router = useRouter();
-  const supabase = createClient();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [chargement, setChargement] = useState(false);
+  const [etat, action, enCours] = useActionState(connecter, ETAT_INITIAL);
+  const [motifErreur, setMotifErreur] = useState<string | null>(null);
 
   // Motif de redirection posé par proxy.ts (compte désactivé / sans profil).
   useEffect(() => {
     const motif = new URLSearchParams(window.location.search).get("motif");
     if (motif === "desactive") {
-      setErreur("Ce compte est désactivé. Contactez un administrateur.");
+      setMotifErreur("Ce compte est désactivé. Contactez un administrateur.");
     } else if (motif === "sans_profil") {
-      setErreur("Ce compte n'est pas autorisé à accéder à l'application.");
+      setMotifErreur("Ce compte n'est pas autorisé à accéder à l'application.");
     }
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErreur(null);
-    setChargement(true);
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      setErreur(
-        /banned/i.test(error.message)
-          ? "Ce compte est désactivé. Contactez un administrateur."
-          : "Identifiants incorrects. Vérifiez votre email et mot de passe."
-      );
-      setChargement(false);
-      // Journalisation (Sprint 15) : jamais bloquante, jamais attendue —
-      // le motif réel est redéterminé côté serveur, pas envoyé ici.
-      fetch("/api/connexion-refusee", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email }),
-      }).catch(() => {});
-      return;
-    }
-
-    router.push("/dashboard");
-    router.refresh();
-  }
+  const erreur = etat.erreur ?? motifErreur;
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
@@ -63,17 +34,16 @@ export default function LoginPage() {
           Accédez au module de calcul de la valeur vénale.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form action={action} className="space-y-4">
           <div>
             <label htmlFor="email" className="mb-1 block text-sm text-ink">
               Email professionnel
             </label>
             <input
               id="email"
+              name="email"
               type="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal"
               placeholder="nom@bureau.ma"
             />
@@ -85,10 +55,9 @@ export default function LoginPage() {
             </label>
             <input
               id="password"
+              name="password"
               type="password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal"
               placeholder="••••••••"
             />
@@ -102,10 +71,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={chargement}
+            disabled={enCours}
             className="w-full rounded bg-signal py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
           >
-            {chargement ? "Connexion en cours…" : "Se connecter"}
+            {enCours ? "Connexion en cours…" : "Se connecter"}
           </button>
         </form>
       </div>

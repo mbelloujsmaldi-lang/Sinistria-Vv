@@ -1,24 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useTransition } from "react";
+import { deconnecter } from "./logout-actions";
 
 export default function LogoutButton() {
-  const supabase = createClient();
-  const router = useRouter();
-  const [enCours, setEnCours] = useState(false);
-
-  async function deconnecter() {
-    setEnCours(true);
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
+  const [enCours, startTransition] = useTransition();
 
   return (
     <button
-      onClick={deconnecter}
+      onClick={() => startTransition(() => deconnecter())}
       disabled={enCours}
       className="text-sm text-slate underline hover:text-ink disabled:opacity-60"
     >
