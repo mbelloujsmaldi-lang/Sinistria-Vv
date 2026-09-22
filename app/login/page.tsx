@@ -37,6 +37,13 @@ export default function LoginPage() {
           : "Identifiants incorrects. Vérifiez votre email et mot de passe."
       );
       setChargement(false);
+      // Journalisation (Sprint 15) : jamais bloquante, jamais attendue —
+      // le motif réel est redéterminé côté serveur, pas envoyé ici.
+      fetch("/api/connexion-refusee", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      }).catch(() => {});
       return;
     }
 

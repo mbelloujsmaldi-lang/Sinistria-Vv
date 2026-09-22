@@ -29,12 +29,22 @@ export async function acteurAdminTechnique(): Promise<Acteur | null> {
   return { id: user.id, role: profil.role as UserRole, nom: profil.nom };
 }
 
+// Identité à consigner dans journal_audit : normalement l'acteur (l'admin
+// qui agit), sauf pour une connexion refusée où il n'y a pas d'acteur au
+// sens propre — c'est alors le compte visé par la tentative (ou un
+// identifiant nul si aucun compte ne correspond à l'email essayé).
+export type SujetJournal = { id: string | null; label: string; role: UserRole | null };
+
+export function sujetDepuisActeur(acteur: Acteur): SujetJournal {
+  return { id: acteur.id, label: acteur.nom, role: acteur.role };
+}
+
 // Écrit une ligne dans journal_audit (Sprint 15) — toujours via le client
 // admin (RLS n'autorise aucune écriture authentifiée sur cette table, par
 // conception). Comme l'ancien auditLog_ : l'audit ne doit JAMAIS faire
 // échouer l'action appelante — erreurs avalées silencieusement.
 export async function journaliser(entree: {
-  acteur: Acteur;
+  sujet: SujetJournal;
   action: string;
   ancienneValeur?: string | null;
   nouvelleValeur?: string | null;
@@ -43,8 +53,9 @@ export async function journaliser(entree: {
   try {
     const admin = createAdminClient();
     await admin.from("journal_audit").insert({
-      utilisateur_id: entree.acteur.id,
-      utilisateur_label: entree.acteur.nom,
+      utilisateur_id: entree.sujet.id,
+      utilisateur_label: entree.sujet.label,
+      role_utilisateur: entree.sujet.role,
       action: entree.action,
       ancienne_valeur: entree.ancienneValeur ?? null,
       nouvelle_valeur: entree.nouvelleValeur ?? null,

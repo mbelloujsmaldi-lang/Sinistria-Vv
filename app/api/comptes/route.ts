@@ -2,7 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ROLES, type UserRole } from "@/lib/roles";
-import { acteurAdminTechnique, genererMotDePasseTemporaire, journaliser, REGEX_EMAIL } from "@/lib/comptes";
+import {
+  acteurAdminTechnique,
+  genererMotDePasseTemporaire,
+  journaliser,
+  REGEX_EMAIL,
+  sujetDepuisActeur,
+} from "@/lib/comptes";
 import { LABELS_ROLE } from "@/lib/roles";
 
 // POST /api/comptes — création d'un compte (Sprint 13, admin_technique
@@ -67,7 +73,7 @@ export async function POST(request: NextRequest) {
   }
 
   await journaliser({
-    acteur,
+    sujet: sujetDepuisActeur(acteur),
     action: "Création de compte",
     nouvelleValeur: `${nom} (${email}) — ${LABELS_ROLE[role]}`,
   });

@@ -2,7 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ROLES, type UserRole } from "@/lib/roles";
-import { acteurAdminTechnique, BAN_DEFINITIF, journaliser, REGEX_UUID } from "@/lib/comptes";
+import {
+  acteurAdminTechnique,
+  BAN_DEFINITIF,
+  journaliser,
+  REGEX_UUID,
+  sujetDepuisActeur,
+} from "@/lib/comptes";
 import { LABELS_ROLE } from "@/lib/roles";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -134,7 +140,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
   if (changeRole && patch.role) {
     await journaliser({
-      acteur,
+      sujet: sujetDepuisActeur(acteur),
       action: "Changement de rôle",
       ancienneValeur: LABELS_ROLE[cible.role as UserRole],
       nouvelleValeur: LABELS_ROLE[patch.role],
@@ -157,7 +163,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
       );
     }
     await journaliser({
-      acteur,
+      sujet: sujetDepuisActeur(acteur),
       action: patch.actif ? "Compte réactivé" : "Compte désactivé",
       observation: `${cible.nom} (compte modifié)`,
     });

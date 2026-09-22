@@ -2,7 +2,7 @@ import Link from "next/link";
 import LogoutButton from "./logout-button";
 import Logo from "../_components/logo";
 import { createClient } from "@/lib/supabase/server";
-import { peutEditerReferentiel, type UserRole } from "@/lib/roles";
+import { peutConsulterAudit, peutEditerReferentiel, type UserRole } from "@/lib/roles";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Le lien "Comptes" n'est qu'un confort d'affichage : la page et les
@@ -16,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     : { data: null };
   const estAdmin = profil?.role === "admin_technique";
   const peutReferentiel = peutEditerReferentiel(profil?.role as UserRole | undefined);
+  const peutAudit = peutConsulterAudit(profil?.role as UserRole | undefined);
 
   return (
     <div className="min-h-screen">
@@ -33,6 +34,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {estAdmin && (
               <Link href="/comptes" className="text-sm text-slate underline hover:text-ink">
                 Comptes
+              </Link>
+            )}
+            {peutAudit && (
+              <Link href="/audit" className="text-sm text-slate underline hover:text-ink">
+                Journal d&apos;audit
               </Link>
             )}
             <LogoutButton />

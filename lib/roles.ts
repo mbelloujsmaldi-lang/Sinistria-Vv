@@ -57,6 +57,13 @@ export function peutEditerReferentiel(role: UserRole | null | undefined): boolea
   return peutValider(role);
 }
 
+// Journal d'audit (Sprint 15) : responsable et au-dessus, même garde que
+// l'ancien système (requireValidateurOuAdmin_) et que la RLS de
+// journal_audit (0014).
+export function peutConsulterAudit(role: UserRole | null | undefined): boolean {
+  return peutValider(role);
+}
+
 // Miroir de la policy RLS "vv_calculations_insert" (0007) : une révision
 // n'est acceptée que si le rang du demandeur est STRICTEMENT supérieur à
 // celui du validateur d'origine. Affichage uniquement — le vrai contrôle
