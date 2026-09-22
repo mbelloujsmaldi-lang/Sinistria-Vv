@@ -6,6 +6,7 @@ import ActionsVV from "./actions-vv";
 import PdfVV from "./pdf-vv";
 import type { DonneesFiche } from "@/lib/fiche-pdf";
 import { peutReviser, LABELS_ROLE, type UserRole } from "@/lib/roles";
+import { chargerComparaisonMarche } from "@/lib/comparaison-marche";
 
 // Affiche "X DH TTC (Y DH HT)" — le HT n'est calculable que si un taux de
 // TVA a été enregistré pour ce calcul (colonne ajoutée au Sprint 8bis :
@@ -131,6 +132,14 @@ export default async function DetailCalculVVPage({
     valideLe: calcul.valide_le,
   };
 
+  const comparaison = await chargerComparaisonMarche(supabase, {
+    marque: calcul.marque,
+    modele: calcul.modele,
+    dateMiseCirculation: calcul.date_mise_circulation,
+    exclureId: calcul.id,
+    valeurDossier: Number(calcul.valeur_definitive ?? calcul.valeur_calculee),
+  });
+
   const { data: historique } = await supabase
     .from("vv_calculations_historique")
     .select("id, action, ancienne_valeur, nouvelle_valeur, observation, created_at, utilisateur_id, profiles(nom)")
@@ -251,6 +260,70 @@ export default async function DetailCalculVVPage({
           userId={user.id}
           role={profil?.role ?? null}
         />
+      </div>
+
+      <div className="mt-6 rounded border border-line bg-white p-6">
+        <h2 className="mb-3 text-sm font-medium text-ink">Comparaison face au marché</h2>
+        {comparaison.cas === "insuffisant" && (
+          <p className="text-sm text-slate">
+            Marque et modèle non renseignés sur ce dossier — comparaison indisponible.
+          </p>
+        )}
+        {comparaison.cas === "aucune" && (
+          <p className="text-sm text-slate">Pas assez de données pour comparer.</p>
+        )}
+        {comparaison.cas === "une" && (
+          <p className="text-sm text-ink">
+            Un seul autre dossier comparable (même marque, modèle et année de mise en circulation) :
+            valeur enregistrée :{" "}
+            <span className="font-medium text-signal">
+              {comparaison.valeur.toLocaleString("fr-MA")} DH
+            </span>
+            .
+          </p>
+        )}
+        {comparaison.cas === "plusieurs" && (
+          <div className="text-sm text-ink">
+            <p className="mb-3 text-slate">
+              {comparaison.n} dossiers comparables (même marque, modèle et année de mise en
+              circulation), sinistres du{" "}
+              {new Date(comparaison.dateMin).toLocaleDateString("fr-MA")} au{" "}
+              {new Date(comparaison.dateMax).toLocaleDateString("fr-MA")}.
+            </p>
+            <dl className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded bg-canvas p-3">
+                <dt className="text-xs text-slate">Moyenne</dt>
+                <dd className="mt-1 font-mono font-medium text-ink">
+                  {Math.round(comparaison.moyenne).toLocaleString("fr-MA")} DH
+                </dd>
+              </div>
+              <div className="rounded bg-canvas p-3">
+                <dt className="text-xs text-slate">Min</dt>
+                <dd className="mt-1 font-mono font-medium text-ink">
+                  {Math.round(comparaison.min).toLocaleString("fr-MA")} DH
+                </dd>
+              </div>
+              <div className="rounded bg-canvas p-3">
+                <dt className="text-xs text-slate">Max</dt>
+                <dd className="mt-1 font-mono font-medium text-ink">
+                  {Math.round(comparaison.max).toLocaleString("fr-MA")} DH
+                </dd>
+              </div>
+            </dl>
+            <p
+              className={`mt-3 text-xs font-medium ${
+                comparaison.position === "dans_la_fourchette" ? "text-signal" : "text-amber-700"
+              }`}
+            >
+              {comparaison.position === "dans_la_fourchette" &&
+                "Ce dossier se situe dans la fourchette du marché."}
+              {comparaison.position === "au_dessus_du_max" &&
+                "⚠ Ce dossier dépasse le maximum observé sur le marché."}
+              {comparaison.position === "en_dessous_du_min" &&
+                "⚠ Ce dossier est en-dessous du minimum observé sur le marché."}
+            </p>
+          </div>
+        )}
       </div>
 
       {(historique ?? []).length > 0 && (
