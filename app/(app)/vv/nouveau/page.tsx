@@ -87,7 +87,7 @@ export default async function NouveauCalculVVPage({
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="mb-1 text-lg font-medium text-ink">Nouveau calcul de valeur vénale</h1>
+      <h1 className="mb-1 text-lg font-bold text-ink">Nouveau calcul de valeur vénale</h1>
       <p className="mb-6 text-sm text-slate">
         Saisissez les caractéristiques du véhicule pour calculer la VVADE et
         l&apos;enregistrer.

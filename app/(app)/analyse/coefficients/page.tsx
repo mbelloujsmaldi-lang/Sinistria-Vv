@@ -14,7 +14,7 @@ export default async function PageCoefficients() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="mb-1 text-lg font-medium text-ink">Table des coefficients</h1>
+      <h1 className="mb-1 text-lg font-bold text-ink">Table des coefficients</h1>
       <p className="mb-6 text-sm text-slate">
         Référence pure sur 25 ans, indépendante de tout dossier réel.
       </p>

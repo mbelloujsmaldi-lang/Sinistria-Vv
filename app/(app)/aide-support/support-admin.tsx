@@ -67,7 +67,7 @@ function LigneMessage({ m }: { m: MessageAdmin }) {
   }
 
   return (
-    <div className="space-y-3 rounded border border-line bg-white p-4">
+    <div className="space-y-3 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <span className="text-sm font-medium text-ink">{m.sujet}</span>
@@ -141,7 +141,7 @@ export default function SupportAdmin({ messagesInitiaux }: { messagesInitiaux: M
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 rounded border border-line bg-white p-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-md border border-line bg-white p-4">
         <label className="text-sm text-ink">Filtrer par statut</label>
         <select
           value={filtre}
@@ -159,7 +159,7 @@ export default function SupportAdmin({ messagesInitiaux }: { messagesInitiaux: M
       </div>
 
       {filtres.length === 0 ? (
-        <p className="rounded border border-line bg-white p-4 text-sm text-slate">
+        <p className="rounded-md border border-line bg-white p-4 text-sm text-slate">
           Aucun message pour ce filtre.
         </p>
       ) : (

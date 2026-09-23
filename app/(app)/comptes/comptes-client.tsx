@@ -161,7 +161,7 @@ export default function ComptesClient({
         </div>
       )}
 
-      <section className="rounded border border-line bg-white p-5">
+      <section className="rounded-md border border-line bg-white p-5">
         <h2 className="mb-3 text-sm font-medium text-ink">Créer un compte</h2>
         <form onSubmit={creer} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <input
@@ -213,7 +213,7 @@ export default function ComptesClient({
         </form>
       </section>
 
-      <div className="overflow-x-auto rounded border border-line bg-white">
+      <div className="overflow-x-auto rounded-md border border-line bg-white">
         <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="border-b border-line text-xs uppercase tracking-wide text-slate">
             <tr>

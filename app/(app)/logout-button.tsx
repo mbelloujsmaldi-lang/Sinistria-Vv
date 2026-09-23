@@ -10,7 +10,7 @@ export default function LogoutButton() {
     <button
       onClick={() => startTransition(() => deconnecter())}
       disabled={enCours}
-      className="text-sm text-slate underline hover:text-ink disabled:opacity-60"
+      className="text-sm text-line hover:text-canvas disabled:opacity-60"
     >
       {enCours ? "Déconnexion…" : "Déconnexion"}
     </button>

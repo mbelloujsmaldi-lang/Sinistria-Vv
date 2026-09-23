@@ -31,7 +31,7 @@ export default async function PageReferentiel() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <h1 className="mb-1 text-lg font-medium text-ink">Marques &amp; Modèles</h1>
+      <h1 className="mb-1 text-lg font-bold text-ink">Marques &amp; Modèles</h1>
       <p className="mb-6 text-sm text-slate">
         Référentiel des véhicules : marques, modèles et valeur à neuf de référence (VN) suggérée
         dans le formulaire de calcul.

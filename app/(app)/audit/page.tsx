@@ -49,7 +49,7 @@ export default async function PageAudit({
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <h1 className="mb-1 text-lg font-medium text-ink">Journal d&apos;audit</h1>
+      <h1 className="mb-1 text-lg font-bold text-ink">Journal d&apos;audit</h1>
       <p className="mb-6 text-sm text-slate">
         Actions sur les calculs, les comptes, et tentatives de connexion refusées — {entrees.length}{" "}
         entrée{entrees.length > 1 ? "s" : ""}.
@@ -57,7 +57,7 @@ export default async function PageAudit({
 
       <form
         method="get"
-        className="mb-4 grid gap-3 rounded border border-line bg-white p-4 sm:grid-cols-2 lg:grid-cols-5"
+        className="mb-4 grid gap-3 rounded-md border border-line bg-white p-4 sm:grid-cols-2 lg:grid-cols-5"
       >
         <div>
           <label htmlFor="utilisateur" className="mb-1 block text-xs text-slate">
@@ -129,7 +129,7 @@ export default async function PageAudit({
         </a>
       </div>
 
-      <div className="overflow-x-auto rounded border border-line bg-white">
+      <div className="overflow-x-auto rounded-md border border-line bg-white">
         <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="border-b border-line text-xs uppercase tracking-wide text-slate">
             <tr>

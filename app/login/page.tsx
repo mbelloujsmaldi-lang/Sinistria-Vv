@@ -29,7 +29,7 @@ export default function LoginPage() {
           <Logo />
         </div>
 
-        <h1 className="mb-1 text-lg font-medium text-ink">Connexion</h1>
+        <h1 className="mb-1 text-lg font-bold text-ink">Connexion</h1>
         <p className="mb-6 text-sm text-slate">
           Accédez au module de calcul de la valeur vénale.
         </p>

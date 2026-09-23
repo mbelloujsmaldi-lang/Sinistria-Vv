@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { StatutBadge } from "../statut-badge";
+import { StatutBadge, ActionHistoriqueBadge } from "../statut-badge";
 import ActionsVV from "./actions-vv";
 import PdfVV from "./pdf-vv";
 import type { DonneesFiche } from "@/lib/fiche-pdf";
@@ -149,7 +149,7 @@ export default async function DetailCalculVVPage({
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <div className="mb-1 flex items-center justify-between">
-        <h1 className="text-lg font-medium text-ink">
+        <h1 className="text-lg font-bold text-ink">
           {calcul.categorie} — {calcul.bareme_version}
         </h1>
         <StatutBadge statut={calcul.statut} />
@@ -173,7 +173,7 @@ export default async function DetailCalculVVPage({
       )}
       {!revisionPrecedente && !revisionSuivante && <div className="mb-6" />}
 
-      <div className="rounded border border-line bg-white p-6">
+      <div className="rounded-md border border-line bg-white p-6">
         <dl className="grid grid-cols-2 gap-y-2 text-sm">
           <dt className="text-slate">Réf. dossier externe</dt>
           <dd className="text-ink">{calcul.reference_dossier_externe || "—"}</dd>
@@ -262,7 +262,7 @@ export default async function DetailCalculVVPage({
         />
       </div>
 
-      <div className="mt-6 rounded border border-line bg-white p-6">
+      <div className="mt-6 rounded-md border border-line bg-white p-6">
         <h2 className="mb-3 text-sm font-medium text-ink">Comparaison face au marché</h2>
         {comparaison.cas === "insuffisant" && (
           <p className="text-sm text-slate">
@@ -327,17 +327,17 @@ export default async function DetailCalculVVPage({
       </div>
 
       {(historique ?? []).length > 0 && (
-        <div className="mt-6 rounded border border-line bg-white p-6">
+        <div className="mt-6 rounded-md border border-line bg-white p-6">
           <h2 className="mb-3 text-sm font-medium text-ink">Historique</h2>
           <ul className="space-y-3 text-sm">
             {(historique ?? []).map((h) => (
               <li key={h.id} className="border-b border-line pb-3 last:border-0 last:pb-0">
-                <p className="text-ink">
+                <p className="flex flex-wrap items-center gap-2 text-ink">
                   <span className="font-medium">
                     {(h.profiles as unknown as { nom: string } | null)?.nom ?? "—"}
-                  </span>{" "}
-                  — {h.action}
-                  {h.observation ? ` — ${h.observation}` : ""}
+                  </span>
+                  <ActionHistoriqueBadge action={h.action} />
+                  {h.observation ? <span>— {h.observation}</span> : null}
                 </p>
                 {(h.ancienne_valeur !== null || h.nouvelle_valeur !== null) && (
                   <p className="text-xs text-slate">

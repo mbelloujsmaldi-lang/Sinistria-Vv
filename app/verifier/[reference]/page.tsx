@@ -81,8 +81,8 @@ function Introuvable() {
     <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
       <div className={CARTE}>
         <EnTete />
-        <h1 className="mb-4 text-lg font-medium text-ink">Vérification de dossier</h1>
-        <p className="inline-block rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-700">
+        <h1 className="mb-4 text-lg font-bold text-ink">Vérification de dossier</h1>
+        <p className="inline-block rounded-full bg-warning px-4 py-1.5 text-sm font-semibold text-canvas">
           Dossier introuvable
         </p>
         <p className="mt-3 text-xs text-slate">
@@ -138,8 +138,8 @@ export default async function PageVerificationPublique({
       <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
         <div className={CARTE}>
           <EnTete />
-          <h1 className="mb-4 text-lg font-medium text-ink">Vérification de dossier</h1>
-          <p className="inline-block rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-700">
+          <h1 className="mb-4 text-lg font-bold text-ink">Vérification de dossier</h1>
+          <p className="inline-block rounded-full bg-warning px-4 py-1.5 text-sm font-semibold text-canvas">
             Document périmé
           </p>
           <p className="mt-3 text-sm text-ink">
@@ -173,14 +173,14 @@ export default async function PageVerificationPublique({
     <main className="flex min-h-screen items-center justify-center bg-canvas px-4">
       <div className={CARTE}>
         <EnTete />
-        <h1 className="mb-4 text-lg font-medium text-ink">Vérification de dossier</h1>
+        <h1 className="mb-4 text-lg font-bold text-ink">Vérification de dossier</h1>
 
         {valide ? (
-          <p className="inline-block rounded-full border border-signal bg-signal-bg px-4 py-1.5 text-sm font-semibold text-signal">
+          <p className="inline-block rounded-full bg-signal px-4 py-1.5 text-sm font-semibold text-canvas">
             ✓ Dossier validé et authentique
           </p>
         ) : (
-          <p className="inline-block rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-700">
+          <p className="inline-block rounded-full bg-warning px-4 py-1.5 text-sm font-semibold text-canvas">
             ⏳ Dossier non encore validé (statut : {calcul.statut})
           </p>
         )}

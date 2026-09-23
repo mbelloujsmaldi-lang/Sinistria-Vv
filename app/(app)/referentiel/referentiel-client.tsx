@@ -146,7 +146,7 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
         </p>
       )}
 
-      <div className="flex flex-wrap items-end justify-between gap-3 rounded border border-line bg-white p-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-md border border-line bg-white p-4">
         <div className="min-w-[220px] flex-1">
           <input
             aria-label="Rechercher une marque ou un modèle"
@@ -175,7 +175,7 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
       </div>
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,320px)_1fr]">
-        <div className="max-h-[65vh] overflow-auto rounded border border-line bg-white">
+        <div className="max-h-[65vh] overflow-auto rounded-md border border-line bg-white">
           {filtrees.length === 0 && (
             <p className="p-4 text-center text-sm text-slate">Aucune marque pour cette recherche.</p>
           )}
@@ -199,7 +199,7 @@ export default function ReferentielClient({ marquesInitiales }: { marquesInitial
           ))}
         </div>
 
-        <div className="rounded border border-line bg-white p-4">
+        <div className="rounded-md border border-line bg-white p-4">
           {!selection ? (
             <p className="py-10 text-center text-sm text-slate">
               Sélectionnez une marque pour gérer ses modèles.

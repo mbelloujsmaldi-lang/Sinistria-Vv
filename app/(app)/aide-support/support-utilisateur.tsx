@@ -69,7 +69,7 @@ export default function SupportUtilisateur({
     <div className="space-y-6">
       <form
         onSubmit={handleSubmit}
-        className="space-y-3 rounded border border-line bg-white p-5"
+        className="space-y-3 rounded-md border border-line bg-white p-5"
       >
         <div>
           <label className="mb-1 block text-sm text-ink">Sujet</label>
@@ -111,12 +111,12 @@ export default function SupportUtilisateur({
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-ink">Mes messages</h3>
         {messagesInitiaux.length === 0 ? (
-          <p className="rounded border border-line bg-white p-4 text-sm text-slate">
+          <p className="rounded-md border border-line bg-white p-4 text-sm text-slate">
             Aucun message envoyé pour le moment.
           </p>
         ) : (
           messagesInitiaux.map((m) => (
-            <div key={m.id} className="space-y-2 rounded border border-line bg-white p-4">
+            <div key={m.id} className="space-y-2 rounded-md border border-line bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-medium text-ink">{m.sujet}</span>
                 <BadgeStatut statut={m.statut} />

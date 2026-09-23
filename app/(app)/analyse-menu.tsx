@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // Regroupement "Analyse" (Sprint 24, Phase C) : Simulateur et Coefficients,
 // deux outils exploratoires distincts du flux transactionnel principal
@@ -15,6 +16,8 @@ const LIENS = [
 export default function AnalyseMenu() {
   const [ouvert, setOuvert] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const actif = LIENS.some((l) => pathname === l.href || pathname.startsWith(`${l.href}/`));
 
   useEffect(() => {
     if (!ouvert) return;
@@ -30,7 +33,11 @@ export default function AnalyseMenu() {
       <button
         type="button"
         onClick={() => setOuvert((v) => !v)}
-        className="flex items-center gap-1 text-sm text-slate underline hover:text-ink"
+        className={
+          actif
+            ? "flex items-center gap-1 rounded-full bg-signal px-3 py-1 text-sm font-medium text-canvas"
+            : "flex items-center gap-1 text-sm text-line hover:text-canvas"
+        }
         aria-expanded={ouvert}
       >
         Analyse
@@ -39,7 +46,7 @@ export default function AnalyseMenu() {
         </span>
       </button>
       {ouvert && (
-        <div className="absolute left-0 top-full z-10 mt-2 w-44 rounded border border-line bg-white py-1 shadow-sm">
+        <div className="absolute left-0 top-full z-10 mt-2 w-44 rounded-md border border-line bg-surface py-1 shadow-sm">
           {LIENS.map((lien) => (
             <Link
               key={lien.href}

@@ -29,6 +29,7 @@ export default async function DashboardPage() {
     .single();
 
   const d = await chargerTableauDeBord(supabase);
+  const tauxValidationPct = d.nbTraites ? (d.nbValides / d.nbTraites) * 100 : 0;
   const maxCat = Math.max(1, ...d.repartitionCategorie.map((c) => c.nb));
   const maxStatut = Math.max(1, ...d.repartitionStatut.map((s) => s.nb));
   const maxHist = Math.max(1, ...d.histogramme.map((b) => b.nb));
@@ -41,9 +42,9 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
-      <div className="rounded border border-line bg-white p-6">
+      <div className="rounded-md border border-line bg-white p-6">
         <p className="text-sm text-slate">Bienvenue,</p>
-        <h1 className="mb-4 text-lg font-medium text-ink">
+        <h1 className="mb-4 text-lg font-bold text-ink">
           {profil?.nom ?? user.email}
         </h1>
 
@@ -73,7 +74,7 @@ export default async function DashboardPage() {
       </div>
 
       {d.nbDossiers === 0 ? (
-        <p className="rounded border border-line bg-white p-6 text-center text-sm text-slate">
+        <p className="rounded-md border border-line bg-white p-6 text-center text-sm text-slate">
           Aucun dossier enregistré pour le moment.
         </p>
       ) : (
@@ -89,16 +90,16 @@ export default async function DashboardPage() {
               sousLabel={`sur ${d.nbValides} validé${d.nbValides > 1 ? "s" : ""}`}
             />
             <Kpi
-              label="Taux de rejet"
-              value={`${d.tauxRejetPct.toFixed(0)} %`}
+              label="Taux de validation"
+              value={`${tauxValidationPct.toFixed(0)} %`}
               sousLabel={`sur ${d.nbTraites} traité${d.nbTraites > 1 ? "s" : ""}`}
-              alerte={d.tauxRejetPct > 20}
+              accent
             />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             {/* Répartition par catégorie */}
-            <div className="rounded border border-line bg-white p-4">
+            <div className="rounded-md border border-line bg-white p-4">
               <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate">
                 Répartition par catégorie
               </p>
@@ -123,7 +124,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Donut carburant */}
-            <div className="flex items-center gap-5 rounded border border-line bg-white p-4">
+            <div className="flex items-center gap-5 rounded-md border border-line bg-white p-4">
               <svg viewBox="0 0 120 120" width="112" height="112" className="-rotate-90 shrink-0">
                 <circle cx="60" cy="60" r={R} fill="none" stroke="#D8D5CC" strokeWidth="14" />
                 <circle
@@ -166,7 +167,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Répartition par statut */}
-          <div className="rounded border border-line bg-white p-4">
+          <div className="rounded-md border border-line bg-white p-4">
             <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate">
               Répartition par statut
             </p>
@@ -189,7 +190,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Histogramme */}
-          <div className="rounded border border-line bg-white p-4">
+          <div className="rounded-md border border-line bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-widest text-slate">
                 Distribution des valeurs vénales (dossiers validés)
@@ -213,7 +214,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Frise des sinistres */}
-          <div className="rounded border border-line bg-white p-4">
+          <div className="rounded-md border border-line bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-widest text-slate">
                 Frise des sinistres
@@ -251,23 +252,33 @@ export default async function DashboardPage() {
   );
 }
 
+// `accent` (Sprint 26, Phase E) : fond signal plein — réservé à UNE seule
+// KPI par écran ("taux de validation" sur ce tableau de bord). Les autres
+// restent en carte neutre : ce n'est pas un style de carte générique.
 function Kpi({
   label,
   value,
   sousLabel,
-  alerte,
+  accent,
 }: {
   label: string;
   value: string;
   sousLabel?: string;
-  alerte?: boolean;
+  accent?: boolean;
 }) {
+  if (accent) {
+    return (
+      <div className="rounded-md bg-signal p-4">
+        <p className="text-xs text-canvas/80">{label}</p>
+        <p className="mt-1 font-mono text-xl font-bold text-canvas">{value}</p>
+        {sousLabel && <p className="mt-0.5 text-[11px] text-canvas/80">{sousLabel}</p>}
+      </div>
+    );
+  }
   return (
-    <div className="rounded border border-line bg-white p-4">
+    <div className="rounded-md border border-line bg-white p-4">
       <p className="text-xs text-slate">{label}</p>
-      <p className={`mt-1 font-mono text-xl font-bold ${alerte ? "text-red-700" : "text-ink"}`}>
-        {value}
-      </p>
+      <p className="mt-1 font-mono text-xl font-bold text-ink">{value}</p>
       {sousLabel && <p className="mt-0.5 text-[11px] text-slate">{sousLabel}</p>}
     </div>
   );

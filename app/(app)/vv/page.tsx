@@ -157,7 +157,7 @@ export default async function ListeCalculsVVPage({
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-lg font-medium text-ink">Registre des calculs de valeur vénale</h1>
+        <h1 className="text-lg font-bold text-ink">Registre des calculs de valeur vénale</h1>
         <Link
           href="/vv/nouveau"
           className="rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light"
@@ -168,7 +168,7 @@ export default async function ListeCalculsVVPage({
 
       <form
         method="get"
-        className="mb-4 grid gap-3 rounded border border-line bg-white p-4 sm:grid-cols-3 lg:grid-cols-7"
+        className="mb-4 grid gap-3 rounded-md border border-line bg-white p-4 sm:grid-cols-3 lg:grid-cols-7"
       >
         <div className="sm:col-span-3 lg:col-span-2">
           <label htmlFor="q" className="mb-1 block text-xs text-slate">
@@ -312,7 +312,7 @@ export default async function ListeCalculsVVPage({
         </a>
       </p>
 
-      <div className="overflow-x-auto rounded border border-line bg-white">
+      <div className="overflow-x-auto rounded-md border border-line bg-white">
         <table className="w-full min-w-[1600px] text-left text-sm">
           <thead className="border-b border-line bg-slate-50 text-xs uppercase text-slate">
             <tr>

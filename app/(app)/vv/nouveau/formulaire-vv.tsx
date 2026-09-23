@@ -322,7 +322,7 @@ export default function FormulaireVV({
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-4 rounded border border-line bg-white p-6">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-md border border-line bg-white p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm text-ink">Barème</label>
@@ -531,7 +531,7 @@ export default function FormulaireVV({
       </form>
 
       {resultat && (
-        <div ref={resultatRef} className="rounded border border-line bg-white p-6">
+        <div ref={resultatRef} className="rounded-md border border-line bg-white p-6">
           <p className="mb-3 text-sm text-slate">
             {enregistre
               ? "Résultat enregistré dans vv_calculations."

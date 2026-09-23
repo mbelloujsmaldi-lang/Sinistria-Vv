@@ -60,7 +60,7 @@ export default function CoefficientsClient() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 rounded border border-line bg-white p-4 sm:grid-cols-3">
+      <div className="grid gap-3 rounded-md border border-line bg-white p-4 sm:grid-cols-3">
         <div>
           <label className="mb-1 block text-sm text-ink">Barème</label>
           <select
@@ -105,7 +105,7 @@ export default function CoefficientsClient() {
         5 reconduit jusqu&apos;à l&apos;année 10, puis 5&nbsp;% par an au-delà.
       </p>
 
-      <div className="overflow-x-auto rounded border border-line bg-white">
+      <div className="overflow-x-auto rounded-md border border-line bg-white">
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead className="border-b border-line text-xs uppercase tracking-wide text-slate">
             <tr>

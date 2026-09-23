@@ -59,7 +59,7 @@ export default async function PageComptes() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <h1 className="mb-1 text-lg font-medium text-ink">Comptes</h1>
+      <h1 className="mb-1 text-lg font-bold text-ink">Comptes</h1>
       <p className="mb-6 text-sm text-slate">
         Gestion des utilisateurs : création, rôles, rattachement, activation et mots de passe.
       </p>

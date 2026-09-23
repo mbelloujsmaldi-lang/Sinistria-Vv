@@ -59,7 +59,7 @@ export default async function PageAideSupport() {
   const methodologie = (
     <section className="space-y-4">
       <h2 className="text-base font-medium text-ink">Méthodologie de calcul</h2>
-      <div className="space-y-3 rounded border border-line bg-white p-5 text-sm leading-relaxed text-ink">
+      <div className="space-y-3 rounded-md border border-line bg-white p-5 text-sm leading-relaxed text-ink">
         <p>
           La valeur vénale à dire d&apos;expert (VVADE) est calculée par un{" "}
           <strong>barème dégressif appliqué au solde restant</strong> de la valeur du véhicule,
@@ -136,7 +136,7 @@ export default async function PageAideSupport() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-8">
-        <h1 className="mb-1 text-lg font-medium text-ink">Aide &amp; Support</h1>
+        <h1 className="mb-1 text-lg font-bold text-ink">Aide &amp; Support</h1>
         <p className="text-sm text-slate">
           Méthodologie de calcul de la valeur vénale et assistance technique.
         </p>

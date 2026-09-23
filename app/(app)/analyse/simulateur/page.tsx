@@ -15,7 +15,7 @@ export default async function PageSimulateur() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <h1 className="mb-1 text-lg font-medium text-ink">Simulateur &laquo; Et si ? &raquo;</h1>
+      <h1 className="mb-1 text-lg font-bold text-ink">Simulateur &laquo; Et si ? &raquo;</h1>
       <p className="mb-6 text-sm text-slate">
         Explorez l&apos;effet de chaque paramètre sur la valeur vénale, sans créer de dossier.
         Rien n&apos;est enregistré ici.

@@ -138,7 +138,7 @@ export default function SimulateurClient() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <div className="space-y-4 rounded border border-line bg-white p-5">
+      <div className="space-y-4 rounded-md border border-line bg-white p-5">
         <Curseur
           label="Âge au sinistre"
           value={age}
@@ -234,7 +234,7 @@ export default function SimulateurClient() {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded border border-line bg-white p-5 text-center">
+        <div className="rounded-md border border-line bg-white p-5 text-center">
           <p className="text-xs uppercase tracking-widest text-slate">
             Valeur vénale à {age.toFixed(1)} an{age >= 2 ? "s" : ""}
           </p>
@@ -249,7 +249,7 @@ export default function SimulateurClient() {
           </p>
         </div>
 
-        <div className="rounded border border-line bg-white p-5">
+        <div className="rounded-md border border-line bg-white p-5">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate">
             Courbe de dépréciation · 0 → 25 ans
           </p>
@@ -289,7 +289,7 @@ export default function SimulateurClient() {
           </svg>
         </div>
 
-        <div className="rounded border border-line bg-white p-5">
+        <div className="rounded-md border border-line bg-white p-5">
           <p className="mb-2 text-sm text-ink">
             Ce simulateur n&apos;enregistre rien. Pour créer un vrai dossier avec ces valeurs :
           </p>

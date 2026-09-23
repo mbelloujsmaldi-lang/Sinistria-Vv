@@ -20,7 +20,16 @@ const config: Config = {
           bg: "#E1F5EE",
         },
         canvas: "#F6F5F1",
+        surface: "#FFFFFF",
         line: "#D8D5CC",
+        warning: {
+          DEFAULT: "#9A6B2F",
+          bg: "#F5EDE0",
+        },
+        error: {
+          DEFAULT: "#A23B3B",
+          bg: "#F5E4E1",
+        },
       },
       fontFamily: {
         sans: [
@@ -30,6 +39,16 @@ const config: Config = {
           "-apple-system",
           "sans-serif",
         ],
+      },
+      borderRadius: {
+        // Direction "Confident System" (Sprint 26) : cartes en radius-md
+        // (10px), pas radius-lg (16px, réservé aux grands panneaux). `sm`
+        // (badges, petits boutons) vaut 6px dans les tokens — PAS le 2px
+        // par défaut de Tailwind, qui serait un écart silencieux. Le
+        // `DEFAULT` (rounded, champs de saisie) reste inchangé.
+        sm: "6px",
+        md: "10px",
+        lg: "16px",
       },
     },
   },
