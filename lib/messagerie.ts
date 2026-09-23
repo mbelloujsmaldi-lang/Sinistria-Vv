@@ -23,11 +23,16 @@ export async function chargerMessages(
   supabase: SupabaseClient,
   calculId: string
 ): Promise<MessageDossier[]> {
-  const { data } = await supabase
+  // "profiles!dossier_messages_auteur_id_fkey" (pas juste "profiles") :
+  // depuis 0021, dossier_messages_lectures ouvre un second chemin
+  // dossier_messages -> profiles (via message_id + utilisateur_id) —
+  // PostgREST refuse un embed "profiles(nom)" ambigu (erreur PGRST201).
+  const { data, error } = await supabase
     .from("dossier_messages")
-    .select("id, vv_calculation_id, auteur_id, type, corps, created_at, profiles(nom)")
+    .select("id, vv_calculation_id, auteur_id, type, corps, created_at, profiles!dossier_messages_auteur_id_fkey(nom)")
     .eq("vv_calculation_id", calculId)
     .order("created_at", { ascending: true });
+  if (error) return [];
   const messages = (data as unknown as Omit<MessageDossier, "lecteurs">[] | null) ?? [];
   if (messages.length === 0) return [];
 

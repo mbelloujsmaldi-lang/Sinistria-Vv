@@ -17,7 +17,7 @@ import {
   IconDiscussion,
 } from "../../nav-icons";
 import type { DonneesFiche } from "@/lib/fiche-pdf";
-import { peutReviser, peutValider, LABELS_ROLE, type UserRole } from "@/lib/roles";
+import { peutReviser, LABELS_ROLE, type UserRole } from "@/lib/roles";
 import { chargerComparaisonMarche } from "@/lib/comparaison-marche";
 import { chargerMessages } from "@/lib/messagerie";
 
@@ -156,12 +156,6 @@ export default async function DetailCalculVVPage({
     valideLe: calcul.valide_le,
   };
 
-  // Discussion (Sprint 27) : réservée aux participants (créateur +
-  // validateurs), miroir de la RLS dossier_messages_select (0019) — un
-  // non-participant ne verrait de toute façon rien via la RLS, l'onglet
-  // lui-même n'est donc pas proposé.
-  const estParticipant = estCreateur || peutValider(profil?.role as UserRole | undefined);
-
   // Chaque onglet coûteux n'est interrogé QUE s'il est actif (même principe
   // que Validations, Sprint 30, point 5) — éviter 4 requêtes à chaque
   // chargement de page alors qu'une seule vue est affichée à la fois.
@@ -185,7 +179,12 @@ export default async function DetailCalculVVPage({
           .order("created_at", { ascending: false })
       : { data: null };
 
-  const messages = onglet === "discussion" && estParticipant ? await chargerMessages(supabase, id) : [];
+  // Discussion (Sprint 27 ; ouverte à tout profil actif Sprint 31bis) —
+  // ce n'est PAS une messagerie privée créateur/validateurs : décision
+  // explicite de l'utilisateur, miroir de la RLS élargie 0022. Une
+  // messagerie réellement privée est un besoin séparé ("Mail"), pas cet
+  // onglet.
+  const messages = onglet === "discussion" ? await chargerMessages(supabase, id) : [];
 
   function urlOnglet(o: Onglet): string {
     return o === "dossier" ? `/vv/${id}` : `/vv/${id}?onglet=${o}`;
@@ -197,11 +196,11 @@ export default async function DetailCalculVVPage({
     { cle: "vam", label: "VAM", icone: IconComparaison },
     { cle: "validation", label: "Validation", icone: IconValidations },
     { cle: "historique", label: "Historique", icone: IconHistorique },
-    ...(estParticipant ? [{ cle: "discussion" as Onglet, label: "Discussion", icone: IconDiscussion }] : []),
+    { cle: "discussion", label: "Discussion", icone: IconDiscussion },
   ];
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-10">
+    <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-1 flex items-center justify-between">
         <h1 className="text-lg font-bold text-ink">
           {calcul.categorie} — {calcul.bareme_version}
@@ -252,7 +251,7 @@ export default async function DetailCalculVVPage({
             Données du dossier, à commencer par la carte grise — saisies manuellement aujourd&apos;hui ;
             une lecture automatique par agent IA est prévue prochainement.
           </p>
-          <dl className="space-y-2 text-sm">
+          <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-3">
               <dt className="text-slate">Réf. dossier externe</dt>
               <dd className="text-ink">{calcul.reference_dossier_externe || "—"}</dd>
@@ -319,7 +318,7 @@ export default async function DetailCalculVVPage({
 
       {onglet === "calcule" && (
         <div className="mt-6 rounded-md border border-line bg-white p-6">
-          <dl className="space-y-2 text-sm">
+          <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
             <div className="flex justify-between gap-3">
               <dt className="text-slate">Valeur à neuf</dt>
               <dd className="text-ink">{Number(calcul.valeur_neuve).toLocaleString("fr-MA")} DH</dd>
@@ -539,7 +538,7 @@ export default async function DetailCalculVVPage({
         </div>
       )}
 
-      {onglet === "discussion" && estParticipant && (
+      {onglet === "discussion" && (
         <div className="mt-6 rounded-md border border-line bg-white p-6">
           <Discussion calculId={id} messages={messages} userId={user.id} />
         </div>
