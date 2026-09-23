@@ -6,6 +6,7 @@ import {
   acteurAdminTechnique,
   BAN_DEFINITIF,
   journaliser,
+  REGEX_EMAIL,
   REGEX_UUID,
   sujetDepuisActeur,
 } from "@/lib/comptes";
@@ -105,7 +106,20 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     patch.chef_hierarchique_id = chef as string | null;
   }
 
-  if (Object.keys(patch).length === 0) {
+  // Email (Sprint 30, point 8) — vit dans auth.users, pas profiles : validé
+  // ici mais appliqué séparément plus bas, via admin.auth.admin, après les
+  // garde-fous et l'écriture de profil (pour ne jamais changer l'email si
+  // le reste de la modification est refusé).
+  let nouvelEmail: string | undefined;
+  if (corps.email !== undefined) {
+    const email = typeof corps.email === "string" ? corps.email.trim().toLowerCase() : "";
+    if (!REGEX_EMAIL.test(email) || email.length > 254) {
+      return NextResponse.json({ erreur: "Adresse email invalide." }, { status: 400 });
+    }
+    nouvelEmail = email;
+  }
+
+  if (Object.keys(patch).length === 0 && nouvelEmail === undefined) {
     return NextResponse.json({ erreur: "Aucune modification demandée." }, { status: 400 });
   }
 
@@ -135,15 +149,22 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     }
   }
 
-  // Écriture via la session de l'administrateur (RLS + trigger 0011).
-  const { data: maj, error } = await supabase
-    .from("profiles")
-    .update(patch)
-    .eq("id", id)
-    .select("id, nom, role, bureau, chef_hierarchique_id, actif")
-    .single();
-  if (error || !maj) {
-    return NextResponse.json({ erreur: "Modification refusée." }, { status: 403 });
+  // Écriture via la session de l'administrateur (RLS + trigger 0011) —
+  // seulement s'il y a un champ de profil à écrire (une modification
+  // "email seul" n'y touche pas).
+  let maj: { id: string; nom: string; role: string; bureau: string; chef_hierarchique_id: string | null; actif: boolean } | null =
+    null;
+  if (Object.keys(patch).length > 0) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", id)
+      .select("id, nom, role, bureau, chef_hierarchique_id, actif")
+      .single();
+    if (error || !data) {
+      return NextResponse.json({ erreur: "Modification refusée." }, { status: 403 });
+    }
+    maj = data;
   }
 
   if (changeRole && patch.role) {
@@ -177,7 +198,27 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     });
   }
 
-  return NextResponse.json(maj);
+  if (nouvelEmail !== undefined) {
+    const { error: erreurEmail } = await admin.auth.admin.updateUserById(id, { email: nouvelEmail });
+    if (erreurEmail) {
+      const dejaPris = /already|registered|exists/i.test(erreurEmail.message);
+      return NextResponse.json(
+        {
+          erreur: dejaPris
+            ? "Cette adresse email est déjà utilisée."
+            : "Le reste a été enregistré, mais l'email n'a pas pu être modifié.",
+        },
+        { status: dejaPris ? 409 : 502 }
+      );
+    }
+    await journaliser({
+      sujet: sujetDepuisActeur(acteur),
+      action: "Modification d'email",
+      observation: `${cible.nom} (compte modifié)`,
+    });
+  }
+
+  return NextResponse.json({ ...maj, id, email: nouvelEmail });
 }
 
 // DELETE /api/comptes/[id] — suppression définitive, RESTREINTE aux comptes

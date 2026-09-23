@@ -15,10 +15,13 @@ export default async function PageComptes() {
   const supabase = await createClient();
   const admin = createAdminClient();
 
-  const { data: profils } = await supabase
-    .from("profiles")
-    .select("id, nom, role, bureau, chef_hierarchique_id, actif")
-    .order("nom");
+  const [{ data: profils }, { data: bureauxDb }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, nom, role, bureau, chef_hierarchique_id, actif")
+      .order("nom"),
+    supabase.from("bureaux").select("id, nom, ville, adresse, email_officiel").order("nom"),
+  ]);
 
   // Email et dernière connexion : uniquement dans auth.users (client admin).
   const { data: liste } = await admin.auth.admin.listUsers({ perPage: 1000 });
@@ -63,7 +66,7 @@ export default async function PageComptes() {
       <p className="mb-6 text-sm text-slate">
         Gestion des utilisateurs : création, rôles, rattachement, activation et mots de passe.
       </p>
-      <ComptesClient comptesInitiaux={comptes} moi={acteur.id} />
+      <ComptesClient comptesInitiaux={comptes} bureauxInitiaux={bureauxDb ?? []} moi={acteur.id} />
     </main>
   );
 }

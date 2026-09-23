@@ -31,13 +31,17 @@ type LigneBrute = {
   statut: string;
   categorie: string;
   carburant: string | null;
+  bareme_version: string;
   date_mise_circulation: string;
   date_sinistre: string;
+  valeur_neuve: number;
   valeur_calculee: number;
   valeur_definitive: number | null;
+  ecart_pct: number | null;
   immatriculation: string | null;
   marque: string | null;
   modele: string | null;
+  created_by: string;
 };
 
 export interface PointFrise {
@@ -64,6 +68,16 @@ export interface TableauDeBord {
   repartitionStatut: { statut: string; nb: number }[];
   histogramme: { libelle: string; nb: number }[];
   frise: PointFrise[];
+  // Sprint 30, point 2 — angle "œil d'expert" plutôt que décoratif : ce que
+  // regarde un expert VVADE (dépréciation réelle, écart au calcul
+  // automatique, provenance des dossiers), pas une répétition du Carburant
+  // (déjà lisible dans le Registre) ou d'une frise déjà couverte par le
+  // Registre/Validations.
+  depreciationMoyennePct: number | null; // valeur_definitive / valeur_neuve, dossiers validés
+  ecartMoyenValidationPct: number | null; // moyenne signée de ecart_pct (biais correctif du validateur)
+  baremeUtilise: { version: string; nb: number }[];
+  repartitionBureau: { bureau: string; nb: number }[];
+  topMarques: { label: string; nb: number }[];
 }
 
 const BINS_HISTOGRAMME: { libelle: string; min: number; max: number }[] = [
@@ -81,7 +95,7 @@ export async function chargerTableauDeBord(supabase: SupabaseClient): Promise<Ta
   const { data } = await supabase
     .from("vv_calculations")
     .select(
-      "id, numero, revision_index, reference, statut, categorie, carburant, date_mise_circulation, date_sinistre, valeur_calculee, valeur_definitive, immatriculation, marque, modele"
+      "id, numero, revision_index, reference, statut, categorie, carburant, bareme_version, date_mise_circulation, date_sinistre, valeur_neuve, valeur_calculee, valeur_definitive, ecart_pct, immatriculation, marque, modele, created_by"
     )
     .order("numero", { ascending: true })
     .order("revision_index", { ascending: true })
@@ -151,6 +165,57 @@ export async function chargerTableauDeBord(supabase: SupabaseClient): Promise<Ta
     }))
     .sort((a, b) => (a.dateSinistre < b.dateSinistre ? -1 : a.dateSinistre > b.dateSinistre ? 1 : 0));
 
+  // Dépréciation moyenne (VVADE définitive / valeur à neuf) — LE chiffre
+  // qu'un expert VVADE regarde en premier : combien un véhicule sinistré
+  // vaut-il, en moyenne, par rapport à son prix neuf ? Absent jusqu'ici.
+  const depreciations = valides
+    .filter((t) => t.valeur_neuve > 0)
+    .map((t) => (Number(t.valeur_definitive ?? 0) / t.valeur_neuve) * 100);
+  const depreciationMoyennePct = depreciations.length
+    ? depreciations.reduce((s, v) => s + v, 0) / depreciations.length
+    : null;
+
+  // Écart moyen à la validation — biais SIGNÉ du validateur par rapport au
+  // calcul automatique (positif = le validateur corrige plutôt à la
+  // hausse). Sert à repérer une dérive du barème ou une pratique de
+  // validation systématique, pas juste "combien de dossiers validés".
+  const ecarts = valides.map((t) => t.ecart_pct).filter((e): e is number => e !== null);
+  const ecartMoyenValidationPct = ecarts.length ? ecarts.reduce((s, e) => s + e, 0) / ecarts.length : null;
+
+  const parBareme = new Map<string, number>();
+  for (const t of tips) parBareme.set(t.bareme_version, (parBareme.get(t.bareme_version) ?? 0) + 1);
+  const baremeUtilise = [...parBareme.entries()]
+    .map(([version, nb]) => ({ version, nb }))
+    .sort((a, b) => a.version.localeCompare(b.version));
+
+  const parMarque = new Map<string, number>();
+  for (const t of tips) {
+    const label = [t.marque, t.modele].filter(Boolean).join(" ").trim();
+    if (label) parMarque.set(label, (parMarque.get(label) ?? 0) + 1);
+  }
+  const topMarques = [...parMarque.entries()]
+    .map(([label, nb]) => ({ label, nb }))
+    .sort((a, b) => b.nb - a.nb)
+    .slice(0, 5);
+
+  // Répartition par bureau — nécessite une jointure légère vers profiles
+  // (vv_calculations ne porte pas le bureau, volontairement : Sprint 3,
+  // isolation du service). Utile même à bureau unique aujourd'hui : la
+  // vue s'étend naturellement dès qu'un second bureau existe.
+  const idsCreateurs = Array.from(new Set(tips.map((t) => t.created_by).filter(Boolean)));
+  const { data: profilsCreateurs } = idsCreateurs.length
+    ? await supabase.from("profiles").select("id, bureau").in("id", idsCreateurs)
+    : { data: [] as { id: string; bureau: string }[] };
+  const bureauParId = new Map((profilsCreateurs ?? []).map((p) => [p.id, p.bureau]));
+  const parBureau = new Map<string, number>();
+  for (const t of tips) {
+    const bureau = bureauParId.get(t.created_by) ?? "—";
+    parBureau.set(bureau, (parBureau.get(bureau) ?? 0) + 1);
+  }
+  const repartitionBureau = [...parBureau.entries()]
+    .map(([bureau, nb]) => ({ bureau, nb }))
+    .sort((a, b) => b.nb - a.nb);
+
   return {
     nbDossiers: tips.length,
     nbValides: valides.length,
@@ -165,5 +230,10 @@ export async function chargerTableauDeBord(supabase: SupabaseClient): Promise<Ta
     repartitionStatut,
     histogramme,
     frise,
+    depreciationMoyennePct,
+    ecartMoyenValidationPct,
+    baremeUtilise,
+    repartitionBureau,
+    topMarques,
   };
 }

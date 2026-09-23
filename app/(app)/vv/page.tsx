@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { StatutBadge } from "./statut-badge";
-import { LABELS_CATEGORIE } from "@/lib/analyse";
-import type { CategorieVehicule } from "@/lib/calcul-vv";
+import { StatutBadge, LABELS_STATUT } from "./statut-badge";
 import {
   chargerOptionsFiltres,
   chargerRegistre,
   type FiltresRegistre,
 } from "@/lib/registre";
-import { IconNouveauCalcul, IconFiltre, IconRafraichir, IconTelecharger } from "../nav-icons";
+import { IconNouveauCalcul, IconFiltre, IconRafraichir, IconTelecharger, IconVoir } from "../nav-icons";
+
+const STATUTS: (keyof typeof LABELS_STATUT)[] = ["calcule", "soumis", "valide", "rejete"];
 
 const CHAMP =
   "w-full rounded border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal";
@@ -18,9 +18,11 @@ const DH = (v: number | null) => (v === null ? "—" : `${Number(v).toLocaleStri
 const DATE = (v: string) => new Date(v).toLocaleDateString("fr-MA");
 
 // Nombre total de colonnes du tableau (pour le colSpan de la ligne vide) :
-// Réf./Immat./Marque/Modèle/Catégorie/Barème/Carburant/Date MEC/Date
-// sinistre/VN/Val. calculée/Val. définitive/Statut/Réf. dossier/Détail.
-const NB_COLONNES = 15;
+// Réf./Réf. externe/Immat./Marque/Modèle/Carburant/Date MEC/Date sinistre/
+// VN/Val. calculée/Statut/Détail (Sprint 30 — table volontairement compactée,
+// Catégorie/Barème/Val. définitive restent des critères de FILTRE mais
+// n'occupent plus de colonne à l'écran).
+const NB_COLONNES = 12;
 
 // Recherche et filtres du Registre (Sprint 25) — filtrage SERVEUR : chaque
 // recherche/filtre/tri est un paramètre d'URL, la requête Supabase filtre
@@ -50,6 +52,7 @@ export default async function ListeCalculsVVPage({
     categorie: uneVal(sp.categorie) || undefined,
     marque: uneVal(sp.marque) || undefined,
     modele: uneVal(sp.modele) || undefined,
+    statut: uneVal(sp.statut) || undefined,
     depuisMec: uneVal(sp.depuisMec) || undefined,
     jusquMec: uneVal(sp.jusquMec) || undefined,
     tri: uneVal(sp.tri) || undefined,
@@ -89,6 +92,7 @@ export default async function ListeCalculsVVPage({
     "categorie",
     "marque",
     "modele",
+    "statut",
     "depuisMec",
     "jusquMec",
   ];
@@ -99,6 +103,7 @@ export default async function ListeCalculsVVPage({
     categorie: `Catégorie : ${options.categories.find((c) => c.cle === filtres.categorie)?.libelle ?? filtres.categorie ?? ""}`,
     marque: `Marque : ${filtres.marque ?? ""}`,
     modele: `Modèle : ${filtres.modele ?? ""}`,
+    statut: `Statut : ${LABELS_STATUT[filtres.statut ?? ""] ?? filtres.statut ?? ""}`,
     depuisMec: `MEC depuis : ${filtres.depuisMec ?? ""}`,
     jusquMec: `MEC jusqu'au : ${filtres.jusquMec ?? ""}`,
     tri: "",
@@ -250,6 +255,19 @@ export default async function ListeCalculsVVPage({
           </select>
         </div>
         <div>
+          <label htmlFor="statut" className="mb-1 block text-xs text-slate">
+            Statut
+          </label>
+          <select id="statut" name="statut" defaultValue={filtres.statut ?? ""} className={CHAMP}>
+            <option value="">Tous</option>
+            {STATUTS.map((s) => (
+              <option key={s} value={s}>
+                {LABELS_STATUT[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label htmlFor="depuisMec" className="mb-1 block text-xs text-slate">
             MEC depuis
           </label>
@@ -321,7 +339,7 @@ export default async function ListeCalculsVVPage({
       </p>
 
       <div className="overflow-x-auto rounded-md border border-line bg-white">
-        <table className="w-full min-w-[1600px] text-left text-sm">
+        <table className="w-full min-w-[1200px] text-left text-sm">
           <thead className="border-b border-line bg-slate-50 text-xs uppercase text-slate">
             <tr>
               <th className="px-3 py-2 font-medium">
@@ -330,6 +348,7 @@ export default async function ListeCalculsVVPage({
                   {filtres.tri === "numero" && <span aria-hidden>{filtres.ordre === "asc" ? "▲" : "▼"}</span>}
                 </a>
               </th>
+              <th className="px-3 py-2 font-medium">Réf. externe</th>
               <th className="px-3 py-2 font-medium">
                 <a href={urlTri("immatriculation")} className="inline-flex items-center gap-1 hover:text-ink">
                   Immat.
@@ -350,8 +369,6 @@ export default async function ListeCalculsVVPage({
                   {filtres.tri === "modele" && <span aria-hidden>{filtres.ordre === "asc" ? "▲" : "▼"}</span>}
                 </a>
               </th>
-              <th className="px-3 py-2 font-medium">Catégorie</th>
-              <th className="px-3 py-2 font-medium">Barème</th>
               <th className="px-3 py-2 font-medium">
                 <a href={urlTri("carburant")} className="inline-flex items-center gap-1 hover:text-ink">
                   Carburant
@@ -394,20 +411,11 @@ export default async function ListeCalculsVVPage({
                 </a>
               </th>
               <th className="px-3 py-2 font-medium">
-                <a href={urlTri("valeur_definitive")} className="inline-flex items-center gap-1 hover:text-ink">
-                  Val. définitive
-                  {filtres.tri === "valeur_definitive" && (
-                    <span aria-hidden>{filtres.ordre === "asc" ? "▲" : "▼"}</span>
-                  )}
-                </a>
-              </th>
-              <th className="px-3 py-2 font-medium">
                 <a href={urlTri("statut")} className="inline-flex items-center gap-1 hover:text-ink">
                   Statut
                   {filtres.tri === "statut" && <span aria-hidden>{filtres.ordre === "asc" ? "▲" : "▼"}</span>}
                 </a>
               </th>
-              <th className="px-3 py-2 font-medium">Réf. dossier</th>
               <th className="px-3 py-2 font-medium"></th>
             </tr>
           </thead>
@@ -415,26 +423,25 @@ export default async function ListeCalculsVVPage({
             {lignes.map((l) => (
               <tr key={l.id} className="border-b border-line last:border-0">
                 <td className="whitespace-nowrap px-3 py-2 font-mono text-ink">{l.reference}</td>
+                <td className="px-3 py-2 text-slate">{l.reference_dossier_externe || "—"}</td>
                 <td className="px-3 py-2 text-ink">{l.immatriculation || "—"}</td>
                 <td className="px-3 py-2 text-ink">{l.marque || "—"}</td>
                 <td className="px-3 py-2 text-ink">{l.modele || "—"}</td>
-                <td className="px-3 py-2 text-slate">
-                  {LABELS_CATEGORIE[l.categorie as CategorieVehicule] ?? l.categorie}
-                </td>
-                <td className="px-3 py-2 text-slate">{l.bareme_version}</td>
                 <td className="px-3 py-2 text-slate">{l.carburant || "—"}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-slate">{DATE(l.date_mise_circulation)}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-slate">{DATE(l.date_sinistre)}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-ink">{DH(l.valeur_neuve)}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-ink">{DH(l.valeur_calculee)}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-ink">{DH(l.valeur_definitive)}</td>
                 <td className="px-3 py-2">
                   <StatutBadge statut={l.statut} />
                 </td>
-                <td className="px-3 py-2 text-slate">{l.reference_dossier_externe || "—"}</td>
                 <td className="px-3 py-2 text-right">
-                  <Link href={`/vv/${l.id}`} className="text-signal underline">
-                    Détail
+                  <Link
+                    href={`/vv/${l.id}`}
+                    aria-label={`Voir le détail du dossier ${l.reference}`}
+                    className="inline-flex items-center justify-center rounded p-1 text-signal hover:bg-signal-bg"
+                  >
+                    <IconVoir className="h-4 w-4 shrink-0" />
                   </Link>
                 </td>
               </tr>

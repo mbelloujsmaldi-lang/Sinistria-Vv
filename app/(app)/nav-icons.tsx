@@ -243,3 +243,30 @@ export function IconHorloge({ className = BASE }: Props) {
     </svg>
   );
 }
+
+export function IconVoir({ className = BASE }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6Z" strokeLinejoin="round" />
+      <circle cx="10" cy="10" r="2.3" />
+    </svg>
+  );
+}
+
+export function IconHistorique({ className = BASE }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <path d="M3 10a7 7 0 1 0 2-4.9" strokeLinecap="round" />
+      <path d="M2.5 3v3.5H6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 6.5V10l2.5 1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconFileAttente({ className = BASE }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <path d="M3 5h14M3 10h14M3 15h9" strokeLinecap="round" />
+    </svg>
+  );
+}

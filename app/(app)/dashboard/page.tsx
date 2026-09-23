@@ -26,12 +26,12 @@ export default async function DashboardPage() {
   const maxCat = Math.max(1, ...d.repartitionCategorie.map((c) => c.nb));
   const maxStatut = Math.max(1, ...d.repartitionStatut.map((s) => s.nb));
   const maxHist = Math.max(1, ...d.histogramme.map((b) => b.nb));
+  const maxBureau = Math.max(1, ...d.repartitionBureau.map((b) => b.nb));
+  const maxMarque = Math.max(1, ...d.topMarques.map((m) => m.nb));
 
-  const C = d.carburant;
-  const R = 42;
-  const CIRC = 2 * Math.PI * R;
-  const pctDiesel = C.total ? (C.diesel / C.total) * 100 : 0;
-  const pctEssence = C.total ? (C.essence / C.total) * 100 : 0;
+  const nbBareme2023 = d.baremeUtilise.find((b) => b.version === "2023")?.nb ?? 0;
+  const pctBareme2023 = d.nbDossiers ? (nbBareme2023 / d.nbDossiers) * 100 : 0;
+  const marqueTop = d.topMarques[0] ?? null;
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
@@ -61,6 +61,34 @@ export default async function DashboardPage() {
             />
           </div>
 
+          {/* Repères d'expert (Sprint 30, point 2) — ce qu'un expert VVADE
+              regarde en premier : dépréciation réelle, biais de validation,
+              barème dominant, marché expertisé. Remplace le donut Carburant
+              (déjà lisible dans le Registre) et la Frise des sinistres
+              (déjà couverte par Registre/Validations), jugés décoratifs. */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Kpi
+              label="Dépréciation moyenne"
+              value={d.depreciationMoyennePct === null ? "—" : `${d.depreciationMoyennePct.toFixed(0)} %`}
+              sousLabel="VVADE / valeur à neuf"
+            />
+            <Kpi
+              label="Écart moyen à la validation"
+              value={
+                d.ecartMoyenValidationPct === null
+                  ? "—"
+                  : `${d.ecartMoyenValidationPct > 0 ? "+" : ""}${d.ecartMoyenValidationPct.toFixed(1)} %`
+              }
+              sousLabel="vs valeur calculée"
+            />
+            <Kpi label="Barème 2023" value={`${pctBareme2023.toFixed(0)} %`} sousLabel="des dossiers" />
+            <Kpi
+              label="Véhicule le plus expertisé"
+              value={marqueTop ? marqueTop.label : "—"}
+              sousLabel={marqueTop ? `${marqueTop.nb} dossier${marqueTop.nb > 1 ? "s" : ""}` : undefined}
+            />
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             {/* Répartition par catégorie */}
             <div className="rounded-md border border-line bg-white p-4">
@@ -87,46 +115,31 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* Donut carburant */}
-            <div className="flex items-center gap-5 rounded-md border border-line bg-white p-4">
-              <svg viewBox="0 0 120 120" width="112" height="112" className="-rotate-90 shrink-0">
-                <circle cx="60" cy="60" r={R} fill="none" stroke="#D8D5CC" strokeWidth="14" />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={R}
-                  fill="none"
-                  stroke="#0F6E56"
-                  strokeWidth="14"
-                  strokeDasharray={`${(pctDiesel / 100) * CIRC} ${CIRC}`}
-                />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={R}
-                  fill="none"
-                  stroke="#3D5A73"
-                  strokeWidth="14"
-                  strokeDasharray={`${(pctEssence / 100) * CIRC} ${CIRC}`}
-                  strokeDashoffset={-(pctDiesel / 100) * CIRC}
-                />
-              </svg>
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-widest text-slate">Carburant</p>
-                <p className="flex items-center gap-2 text-sm">
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm bg-signal" /> Diesel{" "}
-                  <b className="font-mono text-signal">{C.diesel}</b>
-                </p>
-                <p className="mt-1.5 flex items-center gap-2 text-sm">
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate" /> Essence{" "}
-                  <b className="font-mono text-slate">{C.essence}</b>
-                </p>
-                {C.autre > 0 && (
-                  <p className="mt-1.5 text-xs text-slate">
-                    + {C.autre} sans carburant Diesel/Essence renseigné
-                  </p>
-                )}
-              </div>
+            {/* Véhicules les plus expertisés — intelligence de marché pour
+                un expert : quoi passe le plus souvent sur la table. */}
+            <div className="rounded-md border border-line bg-white p-4">
+              <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate">
+                Véhicules les plus expertisés
+              </p>
+              {d.topMarques.length === 0 ? (
+                <p className="text-sm text-slate">Aucune marque renseignée.</p>
+              ) : (
+                <div className="space-y-2">
+                  {d.topMarques.map((m) => (
+                    <div key={m.label}>
+                      <div className="mb-1 flex justify-between text-xs">
+                        <span className="truncate text-ink" title={m.label}>
+                          {m.label}
+                        </span>
+                        <span className="font-medium text-signal">{m.nb}</span>
+                      </div>
+                      <div className="h-1.5 rounded bg-canvas">
+                        <div className="h-1.5 rounded bg-signal" style={{ width: `${(m.nb / maxMarque) * 100}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -177,35 +190,30 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Frise des sinistres */}
-          <div className="rounded-md border border-line bg-white p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-widest text-slate">
-                Frise des sinistres
+          {/* Répartition par bureau — comparaison de volume/activité entre
+              bureaux (jointure vers profiles.bureau via created_by ; vaut
+              même à bureau unique, la vue s'étend naturellement dès qu'un
+              second bureau existe). */}
+          {d.repartitionBureau.length > 1 && (
+            <div className="rounded-md border border-line bg-white p-4">
+              <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate">
+                Répartition par bureau
               </p>
-              <p className="text-xs text-slate">
-                {d.frise.length} événement{d.frise.length > 1 ? "s" : ""}
-              </p>
-            </div>
-            {d.frise.length === 0 ? (
-              <p className="text-sm text-slate">Aucune date de sinistre exploitable.</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {d.frise.map((p) => (
-                  <li
-                    key={p.numero}
-                    className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-line pb-2 last:border-0"
-                  >
-                    <span className="text-ink">
-                      {new Date(p.dateSinistre).toLocaleDateString("fr-MA")} — {p.label}
-                      {p.reference && <span className="text-slate"> ({p.reference})</span>}
-                    </span>
-                    <span className="font-mono font-medium text-signal">{DH(p.valeur)}</span>
-                  </li>
+              <div className="space-y-2">
+                {d.repartitionBureau.map((b) => (
+                  <div key={b.bureau}>
+                    <div className="mb-1 flex justify-between text-xs">
+                      <span className="text-ink">{b.bureau}</span>
+                      <span className="font-medium text-signal">{b.nb}</span>
+                    </div>
+                    <div className="h-1.5 rounded bg-canvas">
+                      <div className="h-1.5 rounded bg-signal" style={{ width: `${(b.nb / maxBureau) * 100}%` }} />
+                    </div>
+                  </div>
                 ))}
-              </ul>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { obtenirNotifications, marquerToutesLues } from "./notifications-actions";
+import { obtenirNotifications, marquerLues } from "./notifications-actions";
 import type { Notification } from "@/lib/notifications";
 
 const INTERVALLE_MS = 30_000;
@@ -26,7 +26,9 @@ export default function NotificationBell() {
 
   async function rafraichir() {
     const { notifications: n, nonLues: nl } = await obtenirNotifications();
-    setNotifications(n);
+    // La liste affichée ne montre que le non-lu : le compteur du badge et
+    // le nombre de lignes de la liste restent ainsi toujours identiques.
+    setNotifications(n.filter((x) => !x.lu));
     setNonLues(nl);
   }
 
@@ -45,13 +47,20 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", surClicExterieur);
   }, [ouvert]);
 
-  async function ouvrir() {
+  function ouvrir() {
     setOuvert((v) => !v);
-    if (nonLues > 0) {
-      await marquerToutesLues(null);
-      setNonLues(0);
-      setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
-    }
+  }
+
+  // Une notification cliquée disparaît de la liste (pas de "tout marquer lu"
+  // à l'ouverture — bug relevé par l'utilisateur : le compteur retombait à
+  // zéro alors que le reste n'avait pas vraiment été consulté). Seule celle
+  // cliquée est marquée lue, et seulement elle quitte la liste affichée.
+  async function surClicNotification(n: Notification) {
+    setOuvert(false);
+    if (n.lu) return;
+    setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    setNonLues((prev) => Math.max(0, prev - 1));
+    await marquerLues([n.id]);
   }
 
   return (
@@ -82,14 +91,14 @@ export default function NotificationBell() {
             Notifications
           </div>
           {notifications.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-slate">Aucune notification.</p>
+            <p className="px-3 py-4 text-sm text-slate">Aucune notification non lue.</p>
           ) : (
             <ul className="max-h-96 overflow-y-auto">
               {notifications.map((n) => (
                 <li key={n.id} className="border-b border-line last:border-0">
                   <Link
                     href={n.lien ?? "#"}
-                    onClick={() => setOuvert(false)}
+                    onClick={() => surClicNotification(n)}
                     className="block px-3 py-2 no-underline hover:bg-canvas"
                   >
                     <p className="text-xs font-medium uppercase tracking-widest text-signal">

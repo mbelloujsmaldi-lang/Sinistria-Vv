@@ -20,7 +20,7 @@ export async function obtenirNotifications(): Promise<{
   return chargerNotifications(supabase);
 }
 
-export async function marquerToutesLues(ids: string[] | null): Promise<{ ok: boolean }> {
+export async function marquerLues(ids: string[] | null): Promise<{ ok: boolean }> {
   const supabase = await createClient();
   const {
     data: { user },

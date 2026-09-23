@@ -16,6 +16,7 @@ export type FiltresRegistre = {
   categorie?: string;
   marque?: string;
   modele?: string;
+  statut?: string;
   depuisMec?: string; // date_mise_circulation, ISO YYYY-MM-DD, inclus
   jusquMec?: string;
   tri?: string;
@@ -114,6 +115,7 @@ function appliquerFiltres<T>(query: T, filtres: FiltresRegistre): T {
   if (filtres.categorie) q = q.eq("categorie", filtres.categorie);
   if (filtres.marque) q = q.eq("marque", filtres.marque);
   if (filtres.modele) q = q.eq("modele", filtres.modele);
+  if (filtres.statut) q = q.eq("statut", filtres.statut);
   if (filtres.depuisMec) q = q.gte("date_mise_circulation", filtres.depuisMec);
   if (filtres.jusquMec) q = q.lte("date_mise_circulation", filtres.jusquMec);
 

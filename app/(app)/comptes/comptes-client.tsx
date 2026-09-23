@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { LABELS_ROLE, ROLES, type UserRole } from "@/lib/roles";
+import { VILLES_MAROC } from "@/lib/villes-maroc";
 import { IconPlus, IconRafraichir, IconModifier } from "../nav-icons";
 
 export type Compte = {
@@ -14,6 +15,14 @@ export type Compte = {
   actif: boolean;
   derniereConnexion: string;
   supprimable: boolean;
+};
+
+export type Bureau = {
+  id: string;
+  nom: string;
+  ville: string | null;
+  adresse: string | null;
+  email_officiel: string | null;
 };
 
 type MotDePasseAffiche = { titre: string; email: string; motDePasse: string };
@@ -33,31 +42,42 @@ async function appel(url: string, methode: string, corps?: unknown) {
 
 export default function ComptesClient({
   comptesInitiaux,
+  bureauxInitiaux,
   moi,
 }: {
   comptesInitiaux: Compte[];
+  bureauxInitiaux: Bureau[];
   moi: string;
 }) {
   const [comptes, setComptes] = useState(comptesInitiaux);
+  const [bureaux, setBureaux] = useState(bureauxInitiaux);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
   const [affiche, setAffiche] = useState<MotDePasseAffiche | null>(null);
   const [copie, setCopie] = useState(false);
   const [occupe, setOccupe] = useState<string | null>(null);
-  const [nouveau, setNouveau] = useState({ nom: "", email: "", bureau: "", role: "technicien" as UserRole });
-  const [renommage, setRenommage] = useState({ ancien: "", nouveau: "" });
-  const [erreurBureau, setErreurBureau] = useState<string | null>(null);
-  const [occupeBureau, setOccupeBureau] = useState(false);
+  const [nouveau, setNouveau] = useState({
+    nom: "",
+    email: "",
+    bureau: "",
+    role: "technicien" as UserRole,
+  });
 
-  // Bureaux distincts (Sprint 29, point 7) — dérivés des comptes existants,
-  // pas d'une table dédiée : "ajouter" un bureau se fait déjà en le tapant
-  // dans le formulaire de création ci-dessus.
-  const bureaux = useMemo(() => {
-    const compte = new Map<string, number>();
-    for (const c of comptes) compte.set(c.bureau, (compte.get(c.bureau) ?? 0) + 1);
-    return Array.from(compte.entries())
-      .map(([nom, n]) => ({ nom, n }))
-      .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
-  }, [comptes]);
+  const [nouveauBureau, setNouveauBureau] = useState({ nom: "", ville: "", adresse: "", email_officiel: "" });
+  const [bureauSelectionne, setBureauSelectionne] = useState("");
+  const [editionBureau, setEditionBureau] = useState({ id: "", nom: "", ville: "", adresse: "", email_officiel: "" });
+  const [erreurBureau, setErreurBureau] = useState<string | null>(null);
+  const [occupeBureau, setOccupeBureau] = useState<string | null>(null);
+
+  const [edition, setEdition] = useState<Compte | null>(null);
+  const [editionForm, setEditionForm] = useState({ nom: "", email: "", bureau: "" });
+  const [erreurEdition, setErreurEdition] = useState<string | null>(null);
+  const [occupeEdition, setOccupeEdition] = useState(false);
+
+  function notifier(texte: string) {
+    setConfirmation(texte);
+    setTimeout(() => setConfirmation(null), 3000);
+  }
 
   function maj(id: string, champs: Partial<Compte>) {
     setComptes((cs) => cs.map((c) => (c.id === id ? { ...c, ...champs } : c)));
@@ -130,17 +150,80 @@ export default function ComptesClient({
     setNouveau({ nom: "", email: "", bureau: "", role: "technicien" });
   }
 
-  async function renommerBureau(e: React.FormEvent) {
+  async function creerBureau(e: React.FormEvent) {
     e.preventDefault();
     setErreurBureau(null);
-    setOccupeBureau(true);
-    const { ok, json } = await appel("/api/comptes/bureaux", "PATCH", renommage);
-    setOccupeBureau(false);
-    if (!ok) return setErreurBureau(json.erreur ?? "Renommage impossible.");
-    setComptes((cs) =>
-      cs.map((c) => (c.bureau === renommage.ancien ? { ...c, bureau: renommage.nouveau } : c))
+    setOccupeBureau("creation");
+    const { ok, json } = await appel("/api/comptes/bureaux", "POST", nouveauBureau);
+    setOccupeBureau(null);
+    if (!ok) return setErreurBureau(json.erreur ?? "Création impossible.");
+    setBureaux((bs) => [...bs, json].sort((a, b) => a.nom.localeCompare(b.nom, "fr")));
+    setNouveauBureau({ nom: "", ville: "", adresse: "", email_officiel: "" });
+    notifier(`Bureau « ${json.nom} » créé.`);
+  }
+
+  function choisirBureauAModifier(id: string) {
+    setBureauSelectionne(id);
+    const b = bureaux.find((x) => x.id === id);
+    setEditionBureau(
+      b
+        ? { id: b.id, nom: b.nom, ville: b.ville ?? "", adresse: b.adresse ?? "", email_officiel: b.email_officiel ?? "" }
+        : { id: "", nom: "", ville: "", adresse: "", email_officiel: "" }
     );
-    setRenommage({ ancien: "", nouveau: "" });
+    setErreurBureau(null);
+  }
+
+  async function enregistrerBureau(e: React.FormEvent) {
+    e.preventDefault();
+    setErreurBureau(null);
+    setOccupeBureau("edition");
+    const ancienNom = bureaux.find((b) => b.id === editionBureau.id)?.nom;
+    const { ok, json } = await appel("/api/comptes/bureaux", "PATCH", editionBureau);
+    setOccupeBureau(null);
+    if (!ok) return setErreurBureau(json.erreur ?? "Modification impossible.");
+    setBureaux((bs) => bs.map((b) => (b.id === json.id ? json : b)).sort((a, b) => a.nom.localeCompare(b.nom, "fr")));
+    if (ancienNom && ancienNom !== json.nom) {
+      setComptes((cs) => cs.map((c) => (c.bureau === ancienNom ? { ...c, bureau: json.nom } : c)));
+    }
+    notifier(
+      json.comptesModifies
+        ? `Bureau mis à jour (${json.comptesModifies} compte${json.comptesModifies > 1 ? "s" : ""} concerné${json.comptesModifies > 1 ? "s" : ""}).`
+        : "Bureau mis à jour."
+    );
+  }
+
+  function ouvrirEdition(c: Compte) {
+    setEdition(c);
+    setEditionForm({ nom: c.nom, email: c.email, bureau: c.bureau });
+    setErreurEdition(null);
+  }
+
+  async function enregistrerEdition(e: React.FormEvent) {
+    e.preventDefault();
+    if (!edition) return;
+    setErreurEdition(null);
+    setOccupeEdition(true);
+    const corps: Record<string, unknown> = {};
+    if (editionForm.nom.trim() !== edition.nom) corps.nom = editionForm.nom.trim();
+    if (editionForm.bureau !== edition.bureau) corps.bureau = editionForm.bureau;
+    if (editionForm.email.trim().toLowerCase() !== edition.email.toLowerCase()) corps.email = editionForm.email.trim();
+
+    if (Object.keys(corps).length === 0) {
+      setOccupeEdition(false);
+      setEdition(null);
+      return;
+    }
+
+    const { ok, json } = await appel(`/api/comptes/${edition.id}`, "PATCH", corps);
+    setOccupeEdition(false);
+    if (!ok) return setErreurEdition(json.erreur ?? "Modification impossible.");
+    maj(edition.id, {
+      nom: corps.nom !== undefined ? (corps.nom as string) : edition.nom,
+      bureau: corps.bureau !== undefined ? (corps.bureau as string) : edition.bureau,
+      email: json.email ?? edition.email,
+    });
+    setEdition(null);
+    notifier(`Compte de ${editionForm.nom.trim() || edition.nom} mis à jour.`);
   }
 
   async function copier(texte: string) {
@@ -157,6 +240,12 @@ export default function ComptesClient({
       {erreur && (
         <p role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {erreur}
+        </p>
+      )}
+
+      {confirmation && (
+        <p role="status" className="rounded border border-signal bg-signal-bg px-3 py-2 text-sm text-signal">
+          {confirmation}
         </p>
       )}
 
@@ -210,15 +299,20 @@ export default function ComptesClient({
             onChange={(e) => setNouveau({ ...nouveau, email: e.target.value })}
             className={CHAMP}
           />
-          <input
+          <select
             aria-label="Bureau"
-            placeholder="Bureau"
             required
-            maxLength={120}
             value={nouveau.bureau}
             onChange={(e) => setNouveau({ ...nouveau, bureau: e.target.value })}
             className={CHAMP}
-          />
+          >
+            <option value="">— Choisir un bureau —</option>
+            {bureaux.map((b) => (
+              <option key={b.id} value={b.nom}>
+                {b.nom}
+              </option>
+            ))}
+          </select>
           <select
             aria-label="Rôle"
             value={nouveau.role}
@@ -233,7 +327,8 @@ export default function ComptesClient({
           </select>
           <button
             type="submit"
-            disabled={occupe === "nouveau"}
+            disabled={occupe === "nouveau" || bureaux.length === 0}
+            title={bureaux.length === 0 ? "Créez d'abord un bureau ci-dessous." : undefined}
             className="inline-flex items-center justify-center gap-2 rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
           >
             <IconPlus className="h-4 w-4 shrink-0" />
@@ -245,55 +340,144 @@ export default function ComptesClient({
       <section className="rounded-md border border-line bg-white p-5">
         <h2 className="mb-1 text-sm font-medium text-ink">Bureaux</h2>
         <p className="mb-3 text-xs text-slate">
-          Un bureau est un texte libre, attaché à chaque compte — pas de liste séparée à gérer.
-          Pour en ajouter un, tapez-le dans le formulaire de création ci-dessus. Pour corriger ou
-          harmoniser un nom existant, renommez-le ici : tous les comptes concernés sont mis à jour
-          en une fois.
+          Fiche par bureau (ville, adresse, email officiel) — alimente le menu déroulant de « Créer
+          un compte » ci-dessus. Renommer un bureau met à jour tous les comptes qui le portent.
         </p>
         <div className="mb-4 flex flex-wrap gap-2">
-          {bureaux.map((b) => (
-            <span
-              key={b.nom}
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs text-ink"
-            >
-              {b.nom}
-              <span className="text-slate">· {b.n}</span>
-            </span>
-          ))}
+          {bureaux.map((b) => {
+            const n = comptes.filter((c) => c.bureau === b.nom).length;
+            return (
+              <span
+                key={b.id}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs text-ink"
+              >
+                {b.nom}
+                {b.ville && <span className="text-slate">· {b.ville}</span>}
+                <span className="text-slate">· {n}</span>
+              </span>
+            );
+          })}
+          {bureaux.length === 0 && <p className="text-xs text-slate">Aucun bureau enregistré pour le moment.</p>}
         </div>
-        <form onSubmit={renommerBureau} className="grid gap-3 sm:grid-cols-3">
-          <select
-            aria-label="Bureau à renommer"
-            required
-            value={renommage.ancien}
-            onChange={(e) => setRenommage({ ...renommage, ancien: e.target.value })}
-            className={CHAMP}
-          >
-            <option value="">— Choisir un bureau —</option>
-            {bureaux.map((b) => (
-              <option key={b.nom} value={b.nom}>
-                {b.nom} ({b.n})
-              </option>
-            ))}
-          </select>
-          <input
-            aria-label="Nouveau nom du bureau"
-            placeholder="Nouveau nom"
-            required
-            maxLength={120}
-            value={renommage.nouveau}
-            onChange={(e) => setRenommage({ ...renommage, nouveau: e.target.value })}
-            className={CHAMP}
-          />
-          <button
-            type="submit"
-            disabled={occupeBureau}
-            className="inline-flex items-center justify-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas disabled:opacity-60"
-          >
-            <IconModifier className="h-4 w-4 shrink-0" />
-            {occupeBureau ? "Renommage…" : "Renommer"}
-          </button>
-        </form>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <form onSubmit={creerBureau} className="space-y-2 rounded border border-line p-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-slate">Créer un bureau</p>
+            <input
+              aria-label="Nom du nouveau bureau"
+              placeholder="Nom du bureau"
+              required
+              maxLength={120}
+              value={nouveauBureau.nom}
+              onChange={(e) => setNouveauBureau({ ...nouveauBureau, nom: e.target.value })}
+              className={CHAMP}
+            />
+            <select
+              aria-label="Ville du nouveau bureau"
+              required
+              value={nouveauBureau.ville}
+              onChange={(e) => setNouveauBureau({ ...nouveauBureau, ville: e.target.value })}
+              className={CHAMP}
+            >
+              <option value="">— Ville —</option>
+              {VILLES_MAROC.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+            <input
+              aria-label="Adresse du nouveau bureau"
+              placeholder="Adresse (optionnel)"
+              maxLength={250}
+              value={nouveauBureau.adresse}
+              onChange={(e) => setNouveauBureau({ ...nouveauBureau, adresse: e.target.value })}
+              className={CHAMP}
+            />
+            <input
+              aria-label="Email officiel du nouveau bureau"
+              type="email"
+              placeholder="Email officiel (optionnel)"
+              value={nouveauBureau.email_officiel}
+              onChange={(e) => setNouveauBureau({ ...nouveauBureau, email_officiel: e.target.value })}
+              className={CHAMP}
+            />
+            <button
+              type="submit"
+              disabled={occupeBureau === "creation"}
+              className="inline-flex items-center justify-center gap-2 rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+            >
+              <IconPlus className="h-4 w-4 shrink-0" />
+              {occupeBureau === "creation" ? "Création…" : "Créer le bureau"}
+            </button>
+          </form>
+
+          <form onSubmit={enregistrerBureau} className="space-y-2 rounded border border-line p-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-slate">Modifier un bureau</p>
+            <select
+              aria-label="Bureau à modifier"
+              value={bureauSelectionne}
+              onChange={(e) => choisirBureauAModifier(e.target.value)}
+              className={CHAMP}
+            >
+              <option value="">— Choisir un bureau —</option>
+              {bureaux.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.nom}
+                </option>
+              ))}
+            </select>
+            <input
+              aria-label="Nouveau nom du bureau"
+              placeholder="Nom du bureau"
+              maxLength={120}
+              disabled={!editionBureau.id}
+              value={editionBureau.nom}
+              onChange={(e) => setEditionBureau({ ...editionBureau, nom: e.target.value })}
+              className={CHAMP}
+            />
+            <select
+              aria-label="Ville du bureau"
+              disabled={!editionBureau.id}
+              value={editionBureau.ville}
+              onChange={(e) => setEditionBureau({ ...editionBureau, ville: e.target.value })}
+              className={CHAMP}
+            >
+              <option value="">— Ville —</option>
+              {VILLES_MAROC.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+            <input
+              aria-label="Adresse du bureau"
+              placeholder="Adresse (optionnel)"
+              maxLength={250}
+              disabled={!editionBureau.id}
+              value={editionBureau.adresse}
+              onChange={(e) => setEditionBureau({ ...editionBureau, adresse: e.target.value })}
+              className={CHAMP}
+            />
+            <input
+              aria-label="Email officiel du bureau"
+              type="email"
+              placeholder="Email officiel (optionnel)"
+              disabled={!editionBureau.id}
+              value={editionBureau.email_officiel}
+              onChange={(e) => setEditionBureau({ ...editionBureau, email_officiel: e.target.value })}
+              className={CHAMP}
+            />
+            <button
+              type="submit"
+              disabled={!editionBureau.id || occupeBureau === "edition"}
+              className="inline-flex items-center justify-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas disabled:opacity-60"
+            >
+              <IconModifier className="h-4 w-4 shrink-0" />
+              {occupeBureau === "edition" ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </form>
+        </div>
         {erreurBureau && <p className="mt-2 text-sm text-error">{erreurBureau}</p>}
       </section>
 
@@ -318,23 +502,7 @@ export default function ComptesClient({
                 <tr key={c.id} data-compte={c.email} className={`border-b border-line last:border-0 ${c.actif ? "" : "bg-canvas text-slate"}`}>
                   <td className="px-3 py-2 font-medium text-ink">
                     <div className="flex items-center gap-2">
-                      <input
-                        aria-label={`Nom de ${c.nom}`}
-                        defaultValue={c.nom}
-                        maxLength={120}
-                        disabled={occupe === c.id}
-                        onBlur={async (e) => {
-                          const v = e.target.value.trim();
-                          if (!v || v === c.nom) {
-                            e.target.value = c.nom;
-                            return;
-                          }
-                          const ok = await modifier(c, { nom: v }, { nom: v });
-                          if (!ok) e.target.value = c.nom;
-                        }}
-                        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                        className={`${CHAMP} min-w-[10rem] font-medium`}
-                      />
+                      {c.nom}
                       {soi && <span className="rounded bg-signal-bg px-1.5 py-0.5 text-xs text-signal">vous</span>}
                     </div>
                   </td>
@@ -355,22 +523,7 @@ export default function ComptesClient({
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-2">
-                    <input
-                      aria-label={`Bureau de ${c.nom}`}
-                      defaultValue={c.bureau}
-                      maxLength={120}
-                      disabled={occupe === c.id}
-                      onBlur={async (e) => {
-                        const v = e.target.value.trim();
-                        if (v === c.bureau) return;
-                        const ok = await modifier(c, { bureau: v }, { bureau: v });
-                        if (!ok) e.target.value = c.bureau;
-                      }}
-                      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                      className={CHAMP}
-                    />
-                  </td>
+                  <td className="px-3 py-2 text-ink">{c.bureau}</td>
                   <td className="px-3 py-2">
                     <select
                       aria-label={`Responsable de ${c.nom}`}
@@ -412,6 +565,15 @@ export default function ComptesClient({
                       <button
                         type="button"
                         disabled={occupe === c.id}
+                        onClick={() => ouvrirEdition(c)}
+                        className="inline-flex items-center gap-1 text-sm text-signal underline hover:text-signal-light disabled:opacity-50"
+                      >
+                        <IconModifier className="h-3.5 w-3.5 shrink-0" />
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        disabled={occupe === c.id}
                         onClick={() => reinitialiser(c)}
                         className="inline-flex items-center gap-1 text-sm text-signal underline hover:text-signal-light disabled:opacity-50"
                       >
@@ -436,6 +598,77 @@ export default function ComptesClient({
           </tbody>
         </table>
       </div>
+
+      {edition && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-ink/40 p-4"
+          onClick={() => setEdition(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-md border border-line bg-white p-5 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-3 text-sm font-medium text-ink">Modifier le compte de {edition.nom}</h2>
+            <form onSubmit={enregistrerEdition} className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs text-slate">Nom</label>
+                <input
+                  required
+                  maxLength={120}
+                  value={editionForm.nom}
+                  onChange={(e) => setEditionForm({ ...editionForm, nom: e.target.value })}
+                  className={CHAMP}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-slate">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={editionForm.email}
+                  onChange={(e) => setEditionForm({ ...editionForm, email: e.target.value })}
+                  className={CHAMP}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-slate">Bureau</label>
+                <select
+                  required
+                  value={editionForm.bureau}
+                  onChange={(e) => setEditionForm({ ...editionForm, bureau: e.target.value })}
+                  className={CHAMP}
+                >
+                  {!bureaux.some((b) => b.nom === editionForm.bureau) && (
+                    <option value={editionForm.bureau}>{editionForm.bureau}</option>
+                  )}
+                  {bureaux.map((b) => (
+                    <option key={b.id} value={b.nom}>
+                      {b.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {erreurEdition && <p className="text-sm text-error">{erreurEdition}</p>}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEdition(null)}
+                  className="rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={occupeEdition}
+                  className="rounded bg-signal px-3 py-1.5 text-sm font-medium text-white hover:bg-signal-light disabled:opacity-60"
+                >
+                  {occupeEdition ? "Enregistrement…" : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
