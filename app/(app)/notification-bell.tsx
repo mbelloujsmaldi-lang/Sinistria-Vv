@@ -73,11 +73,11 @@ export default function NotificationBell() {
       </button>
 
       {ouvert && (
-        // `left-0` (pas `right-0`) : le bandeau passe en flex-wrap sur écran
-        // étroit, la clochette peut alors se retrouver tout à gauche — un
-        // panneau ancré à droite débordait hors écran dans ce cas (bug réel
-        // constaté). Grandir vers la droite reste sûr dans les deux cas.
-        <div className="absolute left-0 top-full z-20 mt-2 w-80 rounded-md border border-line bg-surface shadow-sm">
+        // `bottom-full` (pas `top-full`) : la clochette vit maintenant en
+        // bas de la barre latérale (Sprint 28) — s'ouvrir vers le bas
+        // débordait sous la fenêtre (bug réel constaté au Sprint 27 avec
+        // l'ancien bandeau, cause différente ici mais même symptôme).
+        <div className="absolute bottom-full left-0 z-20 mb-2 w-80 rounded-md border border-line bg-surface shadow-sm">
           <div className="border-b border-line px-3 py-2 text-xs font-medium uppercase tracking-widest text-slate">
             Notifications
           </div>

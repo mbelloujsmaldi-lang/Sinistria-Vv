@@ -22,10 +22,12 @@ export default function ProfileMenu({
   nom,
   roleLabel,
   bureau,
+  reduit = false,
 }: {
   nom: string;
   roleLabel: string;
   bureau: string | null;
+  reduit?: boolean;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [enCours, startTransition] = useTransition();
@@ -47,16 +49,29 @@ export default function ProfileMenu({
         onClick={() => setOuvert((v) => !v)}
         aria-expanded={ouvert}
         aria-label="Menu du profil"
-        className="flex items-center gap-1.5 rounded-full py-0.5 pl-0.5 pr-1.5 text-line hover:text-canvas"
+        title={reduit ? nom : undefined}
+        className={
+          reduit
+            ? "flex w-full items-center justify-center rounded-md py-1.5 text-line hover:text-canvas"
+            : "flex w-full items-center gap-1.5 rounded-md py-0.5 pl-0.5 pr-1.5 text-line hover:text-canvas"
+        }
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-signal text-[11px] font-semibold text-canvas">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-signal text-[11px] font-semibold text-canvas">
           {initiales(nom)}
         </span>
-        <IconChevronBas className={`h-3 w-3 shrink-0 transition-transform ${ouvert ? "rotate-180" : ""}`} />
+        {!reduit && (
+          <>
+            <span className="flex-1 truncate text-left text-sm text-canvas">{nom}</span>
+            <IconChevronBas className={`h-3 w-3 shrink-0 transition-transform ${ouvert ? "rotate-180" : ""}`} />
+          </>
+        )}
       </button>
 
       {ouvert && (
-        <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-md border border-line bg-surface shadow-sm">
+        // `bottom-full` (pas `top-full`) : ce menu vit maintenant en bas de
+        // la barre latérale (Sprint 28) — s'ouvrir vers le bas déborderait
+        // sous la fenêtre.
+        <div className="absolute bottom-full left-0 z-20 mb-2 w-56 rounded-md border border-line bg-surface shadow-sm">
           <div className="border-b border-line px-3 py-2.5">
             <p className="text-sm font-medium text-ink">{nom}</p>
             <p className="text-xs text-slate">
