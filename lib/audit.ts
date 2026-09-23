@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { LABELS_ROLE, type UserRole } from "@/lib/roles";
+import { construireCsv } from "@/lib/csv";
 
 // Vue unifiée du journal d'audit (Sprint 15) : journal_audit (connexions
 // refusées, actions sur les comptes) ET vv_calculations_historique
@@ -126,24 +127,16 @@ export const COLONNES_CSV = [
   "Observation",
 ] as const;
 
-function echapperCsv(v: string): string {
-  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-}
-
 export function versCsv(entrees: EntreeAudit[]): string {
-  const lignes = entrees.map((e) =>
-    [
-      new Date(e.date).toLocaleString("fr-MA", { timeZone: "Africa/Casablanca" }),
-      e.utilisateur,
-      e.role,
-      e.dossier ?? "",
-      e.action,
-      e.ancienneValeur ?? "",
-      e.nouvelleValeur ?? "",
-      e.observation ?? "",
-    ]
-      .map((v) => echapperCsv(String(v)))
-      .join(",")
-  );
-  return "﻿" + [COLONNES_CSV.join(","), ...lignes].join("\r\n");
+  const lignes = entrees.map((e) => [
+    new Date(e.date).toLocaleString("fr-MA", { timeZone: "Africa/Casablanca" }),
+    e.utilisateur,
+    e.role,
+    e.dossier ?? "",
+    e.action,
+    e.ancienneValeur ?? "",
+    e.nouvelleValeur ?? "",
+    e.observation ?? "",
+  ]);
+  return construireCsv(COLONNES_CSV, lignes);
 }
