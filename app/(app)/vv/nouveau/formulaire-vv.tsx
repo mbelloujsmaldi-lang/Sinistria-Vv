@@ -305,12 +305,14 @@ export default function FormulaireVV({
         return;
       }
 
-      const { erreur: erreurAction } = await creerCalcul(champsCalcul);
+      const { erreur: erreurAction, id } = await creerCalcul(champsCalcul);
 
-      if (erreurAction) {
-        setErreur(erreurAction);
+      if (erreurAction || !id) {
+        setErreur(erreurAction ?? "Erreur inconnue.");
       } else {
-        setEnregistre(true);
+        router.push(`/vv/${id}`);
+        router.refresh();
+        return;
       }
     } catch (err) {
       setErreur(err instanceof Error ? err.message : "Erreur inconnue lors du calcul.");

@@ -6,6 +6,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // (lib/notifications.ts). Participants (imposés par la RLS de 0019) :
 // créateur du dossier + tout profil avec pouvoir de validation.
 
+export type LectureMessage = { utilisateur_id: string; nom: string; lu_le: string };
+
 export type MessageDossier = {
   id: string;
   vv_calculation_id: string;
@@ -14,6 +16,7 @@ export type MessageDossier = {
   corps: string;
   created_at: string;
   profiles: { nom: string } | null;
+  lecteurs: LectureMessage[];
 };
 
 export async function chargerMessages(
@@ -25,7 +28,48 @@ export async function chargerMessages(
     .select("id, vv_calculation_id, auteur_id, type, corps, created_at, profiles(nom)")
     .eq("vv_calculation_id", calculId)
     .order("created_at", { ascending: true });
-  return (data as unknown as MessageDossier[] | null) ?? [];
+  const messages = (data as unknown as Omit<MessageDossier, "lecteurs">[] | null) ?? [];
+  if (messages.length === 0) return [];
+
+  const { data: lectures } = await supabase
+    .from("dossier_messages_lectures")
+    .select("message_id, utilisateur_id, lu_le, profiles(nom)")
+    .in(
+      "message_id",
+      messages.map((m) => m.id)
+    );
+  const lecteursParMessage = new Map<string, LectureMessage[]>();
+  for (const l of (lectures as unknown as { message_id: string; utilisateur_id: string; lu_le: string; profiles: { nom: string } | null }[]) ?? []) {
+    const liste = lecteursParMessage.get(l.message_id) ?? [];
+    liste.push({ utilisateur_id: l.utilisateur_id, nom: l.profiles?.nom ?? "—", lu_le: l.lu_le });
+    lecteursParMessage.set(l.message_id, liste);
+  }
+
+  return messages.map((m) => ({ ...m, lecteurs: lecteursParMessage.get(m.id) ?? [] }));
+}
+
+// Accusés de lecture (Sprint 31) — appelé à l'ouverture de l'onglet
+// Discussion : marque comme lus tous les messages du dossier PAS déjà lus
+// par l'utilisateur courant (upsert idempotent, ignore ses propres
+// messages — inutile de "lire" ce qu'on a soi-même écrit).
+export async function marquerMessagesLus(
+  supabase: SupabaseClient,
+  calculId: string,
+  userId: string
+): Promise<void> {
+  const { data: messages } = await supabase
+    .from("dossier_messages")
+    .select("id")
+    .eq("vv_calculation_id", calculId)
+    .neq("auteur_id", userId);
+  if (!messages || messages.length === 0) return;
+
+  await supabase
+    .from("dossier_messages_lectures")
+    .upsert(
+      messages.map((m) => ({ message_id: m.id, utilisateur_id: userId })),
+      { onConflict: "message_id,utilisateur_id", ignoreDuplicates: true }
+    );
 }
 
 // Message système posté par l'acteur d'un événement (soumission/validation/

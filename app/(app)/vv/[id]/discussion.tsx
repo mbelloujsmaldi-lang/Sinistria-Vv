@@ -1,29 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { envoyerMessageDossier } from "./discussion-actions";
+import { envoyerMessageDossier, marquerDiscussionLue } from "./discussion-actions";
 import type { MessageDossier } from "@/lib/messagerie";
 import { IconEnvoyer } from "../../nav-icons";
 
-// Discussion par dossier (Sprint 27) — remplace le système "proposition
-// d'e-mail" de l'ancien Google Apps Script. Messages système (posés par
-// soumettre/valider/rejeter/réviser) rendus en italique neutre, messages
-// libres en bulle. N'est rendu QUE pour les participants (créateur +
-// validateurs) — un non-participant ne verrait de toute façon rien via la
-// RLS (0019), mieux vaut ne pas afficher une section vide trompeuse.
+// Discussion par dossier (Sprint 27 ; accusés de lecture Sprint 31) —
+// remplace le système "proposition d'e-mail" de l'ancien Google Apps
+// Script. Messages système (posés par soumettre/valider/rejeter/réviser)
+// rendus en italique neutre, messages libres en bulle. N'est rendu QUE
+// pour les participants (créateur + validateurs) — un non-participant ne
+// verrait de toute façon rien via la RLS (0019), mieux vaut ne pas
+// afficher une section vide trompeuse. Le marquage "lu" lui-même se fait
+// côté serveur (page.tsx, à l'ouverture de l'onglet) — ce composant
+// n'affiche que le résultat déjà en base, façon accusé de lecture WhatsApp
+// (visible seulement sur SES PROPRES messages : qui les a lus, et quand).
 export default function Discussion({
   calculId,
   messages,
+  userId,
 }: {
   calculId: string;
   messages: MessageDossier[];
+  userId: string;
 }) {
   const router = useRouter();
   const [corps, setCorps] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
+
+  // Consulter cet onglet = lire la discussion (sémantique WhatsApp) : un
+  // seul appel au montage, pas à chaque re-render (router.refresh() après
+  // l'envoi d'un message remonte le composant parent, pas celui-ci).
+  useEffect(() => {
+    marquerDiscussionLue(calculId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calculId]);
 
   async function envoyer() {
     if (!corps.trim()) return;
@@ -42,13 +56,11 @@ export default function Discussion({
   }
 
   return (
-    <div className="mt-6 rounded-md border border-line bg-white p-6">
-      <h2 className="mb-3 text-sm font-medium text-ink">Discussion</h2>
-
+    <div>
       {messages.length === 0 ? (
         <p className="text-sm text-slate">Aucun message pour l&apos;instant.</p>
       ) : (
-        <ul className="mb-4 max-h-80 space-y-2 overflow-y-auto">
+        <ul className="mb-4 max-h-96 space-y-2 overflow-y-auto">
           {messages.map((m) =>
             m.type === "systeme" ? (
               <li key={m.id} className="text-xs italic text-slate">
@@ -66,6 +78,15 @@ export default function Discussion({
                   </span>
                 </p>
                 <p className="text-ink">{m.corps}</p>
+                {m.auteur_id === userId && (
+                  <p className="mt-1 text-[10px] text-slate">
+                    {m.lecteurs.length === 0
+                      ? "Non lu"
+                      : `Lu par ${m.lecteurs
+                          .map((l) => `${l.nom} (${new Date(l.lu_le).toLocaleDateString("fr-MA")})`)
+                          .join(", ")}`}
+                  </p>
+                )}
               </li>
             )
           )}

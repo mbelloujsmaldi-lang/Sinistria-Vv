@@ -270,3 +270,44 @@ export function IconFileAttente({ className = BASE }: Props) {
     </svg>
   );
 }
+
+export function IconDossier({ className = BASE }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <rect x="2.5" y="5" width="15" height="10.5" rx="1.2" />
+      <circle cx="7" cy="10" r="1.6" />
+      <path d="M9.8 9h4.7M9.8 11.3h4.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconCalculatrice({ className = BASE }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <rect x="4" y="2.5" width="12" height="15" rx="1.2" />
+      <path d="M6.5 5.5h7" strokeLinecap="round" />
+      <path d="M6.5 9h.01M10 9h.01M13.5 9h.01M6.5 12h.01M10 12h.01M13.5 12h.01M6.5 15h.01M10 15h.01" strokeLinecap="round" strokeWidth="2" />
+    </svg>
+  );
+}
+
+export function IconComparaison({ className = BASE }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <path d="M4 16V8M10 16V4M16 16v-5" strokeLinecap="round" />
+      <path d="M2.5 16h15" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconDiscussion({ className = BASE }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+      <path
+        d="M3 4.5h14v8.5H8l-3.5 3v-3H3Z"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

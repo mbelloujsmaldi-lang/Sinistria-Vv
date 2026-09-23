@@ -7,7 +7,7 @@ import { peutValider, type UserRole } from "@/lib/roles";
 import { IconEnvoyer, IconValider, IconRejeter } from "../../nav-icons";
 
 const CHAMP =
-  "w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal";
+  "w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal disabled:bg-canvas disabled:text-slate";
 
 interface Props {
   calculId: string;
@@ -18,6 +18,11 @@ interface Props {
   role: UserRole | null;
 }
 
+// Onglet "Validation" (Sprint 27 ; Sprint 31 point 2) — le bouton de
+// l'étape EN COURS reste visible pour tout participant, même quand son
+// rôle ne permet pas de l'actionner : désactivé + info-bulle expliquant
+// pourquoi, plutôt que masqué (ancien comportement — une case vide ne dit
+// pas si l'étape existe et à qui elle revient).
 export default function ActionsVV({
   calculId,
   statut,
@@ -90,26 +95,43 @@ export default function ActionsVV({
   const estCreateur = userId === creePar;
   const peutValiderCeCalcul = peutValider(role);
 
-  if (statut === "calcule" && estCreateur) {
+  if (statut === "calcule") {
+    const desactive = !estCreateur || chargement;
     return (
-      <div className="mt-6 border-t border-line pt-4">
+      <div>
         {erreur && <p className="mb-2 text-sm text-red-700">{erreur}</p>}
         <button
           onClick={soumettre}
-          disabled={chargement}
-          className="inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+          disabled={desactive}
+          title={!estCreateur ? "Seul le créateur du dossier peut le soumettre à validation." : undefined}
+          className="inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:cursor-not-allowed disabled:bg-line disabled:text-slate disabled:hover:bg-line"
         >
           <IconEnvoyer className="h-4 w-4 shrink-0" />
           {chargement ? "Envoi en cours…" : "Soumettre à validation"}
         </button>
+        {!estCreateur && (
+          <p className="mt-2 text-xs text-slate">
+            En attente de soumission par le créateur du dossier.
+          </p>
+        )}
       </div>
     );
   }
 
-  if (statut === "soumis" && peutValiderCeCalcul) {
+  if (statut === "soumis") {
+    const desactive = !peutValiderCeCalcul || chargement;
+    const titreDesactive = !peutValiderCeCalcul
+      ? "Rôle insuffisant pour valider (Responsable et au-dessus requis)."
+      : undefined;
+
     return (
-      <div className="mt-6 space-y-4 border-t border-line pt-4">
+      <div className="space-y-4">
         {erreur && <p className="text-sm text-red-700">{erreur}</p>}
+        {!peutValiderCeCalcul && (
+          <p className="text-xs text-slate">
+            En attente de décision par un validateur (Responsable et au-dessus).
+          </p>
+        )}
 
         {!afficherRejet ? (
           <>
@@ -120,6 +142,7 @@ export default function ActionsVV({
                 step="0.01"
                 value={valeurDefinitive}
                 onChange={(e) => setValeurDefinitive(e.target.value)}
+                disabled={desactive}
                 className={CHAMP}
               />
             </div>
@@ -131,6 +154,7 @@ export default function ActionsVV({
                 type="text"
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
+                disabled={desactive}
                 className={CHAMP}
                 placeholder="Ex. Ajustage prix marché"
               />
@@ -138,15 +162,18 @@ export default function ActionsVV({
             <div className="flex gap-3">
               <button
                 onClick={valider}
-                disabled={chargement}
-                className="inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+                disabled={desactive}
+                title={titreDesactive}
+                className="inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:cursor-not-allowed disabled:bg-line disabled:text-slate disabled:hover:bg-line"
               >
                 <IconValider className="h-4 w-4 shrink-0" />
                 {chargement ? "Validation en cours…" : "Valider"}
               </button>
               <button
                 onClick={() => setAfficherRejet(true)}
-                className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"
+                disabled={!peutValiderCeCalcul}
+                title={titreDesactive}
+                className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate disabled:hover:bg-transparent"
               >
                 <IconRejeter className="h-4 w-4 shrink-0" />
                 Retourner pour correction
@@ -168,8 +195,9 @@ export default function ActionsVV({
             <div className="flex gap-3">
               <button
                 onClick={rejeter}
-                disabled={chargement}
-                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                disabled={desactive}
+                title={titreDesactive}
+                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-line disabled:text-slate disabled:hover:bg-line"
               >
                 <IconRejeter className="h-4 w-4 shrink-0" />
                 {chargement ? "Envoi en cours…" : "Confirmer le rejet"}
@@ -187,5 +215,9 @@ export default function ActionsVV({
     );
   }
 
-  return null;
+  return (
+    <p className="text-sm text-slate">
+      Aucune action de validation en attente à ce stade (statut « {statut} »).
+    </p>
+  );
 }
