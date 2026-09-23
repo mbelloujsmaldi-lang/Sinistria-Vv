@@ -93,8 +93,10 @@ export default async function DetailCalculVVPage({
     .limit(1)
     .maybeSingle();
 
-  const estCreateur = user.id === calcul.created_by;
-  const peutModifier = estCreateur && calcul.statut !== "valide";
+  // Édition en place ouverte à tout profil actif (Sprint 32, miroir de
+  // vv_calculations_update_edition, 0023) — plus réservée au créateur.
+  // "soumis" reste exclu : verrouillé en attente de décision.
+  const peutModifier = calcul.statut === "calcule" || calcul.statut === "rejete";
 
   let peutReviserCeCalcul = false;
   let validateur: { nom: string; role: UserRole } | null = null;
@@ -392,7 +394,7 @@ export default async function DetailCalculVVPage({
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-4">
-            {(peutModifier || peutReviserCeCalcul) && calcul.statut !== "valide" && (
+            {peutModifier && (
               <Link
                 href={`/vv/${calcul.id}/modifier`}
                 className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"

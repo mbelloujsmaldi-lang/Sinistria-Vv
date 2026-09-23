@@ -61,13 +61,11 @@ export default async function ModifierCalculVVPage({
     immatriculation: calcul.immatriculation ?? null,
   };
 
-  if (calcul.statut !== "valide") {
-    // Édition en place — réservée au créateur, tant que non validé
-    // (miroir de vv_calculations_update_edition, 0007).
-    if (calcul.created_by !== user.id) {
-      redirect(`/vv/${id}`);
-    }
-
+  if (calcul.statut === "calcule" || calcul.statut === "rejete") {
+    // Édition en place — ouverte à tout profil actif (Sprint 32, miroir
+    // de vv_calculations_update_edition, 0023) : plus réservée au
+    // créateur. Un dossier rejeté corrigé ici redevient "calcule" côté
+    // serveur (modifierCalcul), prêt à être resoumis.
     return (
       <main className="mx-auto max-w-2xl px-6 py-10">
         <h1 className="mb-1 text-lg font-bold text-ink">
@@ -85,6 +83,12 @@ export default async function ModifierCalculVVPage({
         />
       </main>
     );
+  }
+
+  if (calcul.statut !== "valide") {
+    // "soumis" : ni édition en place, ni révision (verrouillé, en attente
+    // de décision — cf. app/(app)/vv/[id]/page.tsx).
+    redirect(`/vv/${id}`);
   }
 
   // Révision — réservée à un rang strictement supérieur à celui du

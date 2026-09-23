@@ -76,7 +76,20 @@ export async function modifierCalcul(
   const ctx = await utilisateurCourant();
   if (!ctx) return { erreur: "Session expirée." };
 
-  const { error } = await ctx.supabase.from("vv_calculations").update(champs).eq("id", calculId);
+  const { data: avant } = await ctx.supabase
+    .from("vv_calculations")
+    .select("statut")
+    .eq("id", calculId)
+    .single();
+
+  // Un dossier rejeté redevient "calcule" dès qu'il est corrigé — sinon
+  // rien ne permettait plus de le resoumettre (Validation ne gère que les
+  // transitions calcule -> soumis et soumis -> valide/rejete). motif_rejet
+  // est vidé : il ne décrit plus l'état courant une fois la correction faite.
+  const etaitRejete = avant?.statut === "rejete";
+  const patch = etaitRejete ? { ...champs, statut: "calcule" as const, motif_rejet: null } : champs;
+
+  const { error } = await ctx.supabase.from("vv_calculations").update(patch).eq("id", calculId);
   if (error) return { erreur: `Calcul effectué mais non enregistré : ${error.message}` };
 
   await ctx.supabase.from("vv_calculations_historique").insert({
@@ -86,6 +99,7 @@ export async function modifierCalcul(
     action: "Modification",
     ancienne_valeur: ancienneValeur,
     nouvelle_valeur: champs.valeur_calculee,
+    observation: etaitRejete ? "Dossier corrigé après rejet — repasse à Calculé" : null,
   });
 
   return { erreur: null, id: calculId };
