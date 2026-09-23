@@ -45,8 +45,15 @@ export default async function proxy(request: NextRequest) {
   const estPageConnexionExacte = request.nextUrl.pathname === "/login";
 
   if (!user && !isLoginPage) {
+    // "next" (Sprint 33) : destination d'origine, pour y renvoyer après
+    // connexion (ex. lien "Accéder au dossier" de /verifier, QR code sur
+    // un autre appareil) — url.clone() ne change QUE le pathname, donc sans
+    // ceci l'ancien search string (ex. ?onglet=discussion) restait collé
+    // tel quel derrière /login, et la destination elle-même était perdue.
+    const destination = request.nextUrl.pathname + request.nextUrl.search;
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.search = `?next=${encodeURIComponent(destination)}`;
     return NextResponse.redirect(url);
   }
 
@@ -74,8 +81,14 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user && estPageConnexionExacte) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/accueil";
+    // Session déjà active malgré tout (ex. lien /login?next=... rouvert
+    // avec un onglet resté connecté) : même destination que la Server
+    // Action de connexion, pas systématiquement /accueil. "next" peut
+    // porter son propre "?" (ex. /vv/xxx?onglet=discussion) — reconstruit
+    // via `new URL`, jamais assigné tel quel à .pathname.
+    const suivante = request.nextUrl.searchParams.get("next");
+    const surPlace = suivante && suivante.startsWith("/") && !suivante.startsWith("//");
+    const url = new URL(surPlace ? suivante! : "/accueil", request.nextUrl.origin);
     return NextResponse.redirect(url);
   }
 

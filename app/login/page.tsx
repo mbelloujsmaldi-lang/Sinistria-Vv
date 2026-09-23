@@ -10,15 +10,24 @@ const ETAT_INITIAL: EtatConnexion = { erreur: null };
 export default function LoginPage() {
   const [etat, action, enCours] = useActionState(connecter, ETAT_INITIAL);
   const [motifErreur, setMotifErreur] = useState<string | null>(null);
+  const [suivante, setSuivante] = useState("");
+  const [motDePasseVisible, setMotDePasseVisible] = useState(false);
 
-  // Motif de redirection posé par proxy.ts (compte désactivé / sans profil).
+  // Motif de redirection posé par proxy.ts (compte désactivé / sans profil)
+  // et destination d'origine ("next", Sprint 33 — lien "Accéder au
+  // dossier" depuis /verifier, ou toute page protégée visitée sans
+  // session) : transmise via un champ caché, pas relue depuis l'URL côté
+  // Server Action (qui ne voit que le FormData soumis).
   useEffect(() => {
-    const motif = new URLSearchParams(window.location.search).get("motif");
+    const params = new URLSearchParams(window.location.search);
+    const motif = params.get("motif");
     if (motif === "desactive") {
       setMotifErreur("Ce compte est désactivé. Contactez un administrateur.");
     } else if (motif === "sans_profil") {
       setMotifErreur("Ce compte n'est pas autorisé à accéder à l'application.");
     }
+    const next = params.get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) setSuivante(next);
   }, []);
 
   const erreur = etat.erreur ?? motifErreur;
@@ -36,6 +45,7 @@ export default function LoginPage() {
         </p>
 
         <form action={action} className="space-y-4">
+          <input type="hidden" name="next" value={suivante} />
           <div>
             <label htmlFor="email" className="mb-1 block text-sm text-ink">
               Email professionnel
@@ -54,14 +64,24 @@ export default function LoginPage() {
             <label htmlFor="password" className="mb-1 block text-sm text-ink">
               Mot de passe
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              className="w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={motDePasseVisible ? "text" : "password"}
+                required
+                className="w-full rounded border border-line bg-white px-3 py-2 pr-10 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setMotDePasseVisible((v) => !v)}
+                aria-label={motDePasseVisible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-slate hover:text-ink"
+              >
+                {motDePasseVisible ? <IconOeilBarre /> : <IconOeil />}
+              </button>
+            </div>
           </div>
 
           {erreur && (
@@ -86,5 +106,27 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+function IconOeil() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4 shrink-0">
+      <path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6Z" strokeLinejoin="round" />
+      <circle cx="10" cy="10" r="2.3" />
+    </svg>
+  );
+}
+
+function IconOeilBarre() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4 shrink-0">
+      <path
+        d="M2.5 2.5l15 15M8.3 5.1C8.85 4.9 9.42 4.8 10 4.8c5.5 0 8.5 5.2 8.5 5.2a15 15 0 0 1-3.1 3.7M5.9 6.1A14.9 14.9 0 0 0 1.5 10s3 5.2 8.5 5.2c1.1 0 2.1-.2 3-.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M8.1 8.2A2.3 2.3 0 0 0 10 12.3c.5 0 .95-.15 1.35-.4" strokeLinecap="round" />
+    </svg>
   );
 }

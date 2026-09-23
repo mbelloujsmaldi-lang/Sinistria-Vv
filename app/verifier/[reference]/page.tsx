@@ -185,6 +185,17 @@ export default async function PageVerificationPublique({
           </p>
         )}
 
+        {/* Sprint 33 : accès direct au dossier depuis un autre appareil (QR
+            scanné hors session) — /vv/[id] exige une connexion, proxy.ts
+            renvoie alors vers /login?next=..., qui ramène ici une fois
+            connecté (au lieu du tableau de bord par défaut). */}
+        <Link
+          href={`/vv/${calcul.id}`}
+          className="mt-4 block w-full rounded bg-signal px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-signal-light"
+        >
+          Accéder au dossier
+        </Link>
+
         <dl className="mt-5 space-y-2 border-t border-line pt-4 text-left text-sm">
           <div className="flex justify-between border-b border-line pb-2">
             <dt className="text-slate">N° dossier</dt>

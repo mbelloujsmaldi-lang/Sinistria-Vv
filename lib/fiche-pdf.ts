@@ -356,10 +356,20 @@ export function construireFiche(
   y += boxH + 12;
 
   // ---- Signatures + QR ----
+  // "L'expert" est réservé au Directeur (c'est lui l'expert, par
+  // définition) : son nom n'y figure QUE s'il est bien le validateur du
+  // dossier. Tout autre validateur (Responsable, Adjoint directeur...)
+  // signe comme "Le responsable" à la place — jamais les deux emplacements
+  // en même temps, et jamais le créateur (qui n'a rien validé).
   const sigW = 62;
+  const validateurEstDirecteur = estValide && d.validateurFonction === "Directeur";
   const blocs: { x: number; titre: string; nom: string }[] = [
-    { x: M, titre: "L'expert", nom: ou(d.createurNom, "") },
-    { x: M + sigW + 8, titre: "Le responsable", nom: estValide ? ou(d.validateurNom, "") : "" },
+    { x: M, titre: "L'expert", nom: validateurEstDirecteur ? ou(d.validateurNom, "") : "" },
+    {
+      x: M + sigW + 8,
+      titre: "Le responsable",
+      nom: estValide && !validateurEstDirecteur ? ou(d.validateurNom, "") : "",
+    },
   ];
   blocs.forEach((b) => {
     doc.setTextColor(...ARDOISE);
