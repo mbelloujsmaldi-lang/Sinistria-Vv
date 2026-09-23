@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { soumettre as soumettreAction, valider as validerAction, rejeter as rejeterAction } from "./server-actions";
 import { peutValider, type UserRole } from "@/lib/roles";
+import { IconEnvoyer, IconValider, IconRejeter } from "../../nav-icons";
 
 const CHAMP =
   "w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal";
@@ -96,8 +97,9 @@ export default function ActionsVV({
         <button
           onClick={soumettre}
           disabled={chargement}
-          className="rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
         >
+          <IconEnvoyer className="h-4 w-4 shrink-0" />
           {chargement ? "Envoi en cours…" : "Soumettre à validation"}
         </button>
       </div>
@@ -137,14 +139,16 @@ export default function ActionsVV({
               <button
                 onClick={valider}
                 disabled={chargement}
-                className="rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
               >
+                <IconValider className="h-4 w-4 shrink-0" />
                 {chargement ? "Validation en cours…" : "Valider"}
               </button>
               <button
                 onClick={() => setAfficherRejet(true)}
-                className="rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"
               >
+                <IconRejeter className="h-4 w-4 shrink-0" />
                 Retourner pour correction
               </button>
             </div>
@@ -165,8 +169,9 @@ export default function ActionsVV({
               <button
                 onClick={rejeter}
                 disabled={chargement}
-                className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
               >
+                <IconRejeter className="h-4 w-4 shrink-0" />
                 {chargement ? "Envoi en cours…" : "Confirmer le rejet"}
               </button>
               <button

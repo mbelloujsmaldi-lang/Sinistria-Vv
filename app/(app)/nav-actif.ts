@@ -5,6 +5,7 @@
 // Partagé entre nav-link.tsx et analyse-menu.tsx (Sprint 28) pour éviter
 // deux registres divergents.
 export const TOUS_LES_HREFS = [
+  "/dashboard",
   "/vv/nouveau",
   "/vv",
   "/validations",
@@ -12,6 +13,7 @@ export const TOUS_LES_HREFS = [
   "/audit",
   "/comptes",
   "/annonces",
+  "/echange",
   "/aide-support",
 ];
 

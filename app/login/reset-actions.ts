@@ -65,5 +65,5 @@ export async function definirNouveauMotDePasse(
   const { error } = await supabase.auth.updateUser({ password: nouveauMdp });
   if (error) return { erreur: error.message };
 
-  redirect("/dashboard");
+  redirect("/accueil");
 }

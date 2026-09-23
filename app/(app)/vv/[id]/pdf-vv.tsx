@@ -4,6 +4,7 @@ import { useState } from "react";
 import QRCode from "qrcode";
 import { construireFiche, LIMITE_BAS, type DonneesFiche } from "@/lib/fiche-pdf";
 import { rasteriserLogo } from "@/lib/logo-pdf";
+import { IconTelecharger, IconImprimer } from "../../nav-icons";
 
 // "Imprimer" (Sprint 27) — réutilise EXACTEMENT le même document que
 // "Télécharger le PDF" (construireFiche), ouvert dans un nouvel onglet
@@ -69,8 +70,9 @@ export default function PdfVV({ donnees }: { donnees: DonneesFiche }) {
         <button
           onClick={telecharger}
           disabled={enCours !== null}
-          className="rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50 disabled:opacity-60"
         >
+          <IconTelecharger className="h-4 w-4 shrink-0" />
           {enCours === "telecharger"
             ? "Génération…"
             : estValide
@@ -80,8 +82,9 @@ export default function PdfVV({ donnees }: { donnees: DonneesFiche }) {
         <button
           onClick={imprimer}
           disabled={enCours !== null}
-          className="rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50 disabled:opacity-60"
         >
+          <IconImprimer className="h-4 w-4 shrink-0" />
           {enCours === "imprimer" ? "Préparation…" : "Imprimer"}
         </button>
       </div>

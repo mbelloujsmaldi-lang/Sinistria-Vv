@@ -19,7 +19,7 @@ export default async function ProfilPage() {
     .select("nom, role, bureau, actif")
     .eq("id", user.id)
     .single();
-  if (!profil?.actif) redirect("/dashboard");
+  if (!profil?.actif) redirect("/accueil");
 
   return (
     <main className="mx-auto max-w-lg px-6 py-10">

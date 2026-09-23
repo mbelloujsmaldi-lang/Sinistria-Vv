@@ -36,5 +36,5 @@ export async function connecter(
     };
   }
 
-  redirect("/dashboard");
+  redirect("/accueil");
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { publierAnnonce } from "./annonces-actions";
+import { IconEnvoyer } from "../nav-icons";
 
 // Composition d'annonce (Sprint 27) — admin_technique uniquement (garde
 // serveur : la page ne rend ce composant que pour ce rôle, et la RLS
@@ -71,8 +72,9 @@ export default function AnnonceForm({ bureaux }: { bureaux: string[] }) {
         <button
           onClick={publier}
           disabled={envoi || !bureau.trim() || !titre.trim() || !corps.trim()}
-          className="rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
         >
+          <IconEnvoyer className="h-4 w-4 shrink-0" />
           {envoi ? "Publication…" : "Publier"}
         </button>
       </div>

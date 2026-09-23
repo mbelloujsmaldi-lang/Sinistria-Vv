@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LABELS_ROLE, ROLES, type UserRole } from "@/lib/roles";
+import { IconPlus, IconRafraichir, IconModifier } from "../nav-icons";
 
 export type Compte = {
   id: string;
@@ -43,6 +44,20 @@ export default function ComptesClient({
   const [copie, setCopie] = useState(false);
   const [occupe, setOccupe] = useState<string | null>(null);
   const [nouveau, setNouveau] = useState({ nom: "", email: "", bureau: "", role: "technicien" as UserRole });
+  const [renommage, setRenommage] = useState({ ancien: "", nouveau: "" });
+  const [erreurBureau, setErreurBureau] = useState<string | null>(null);
+  const [occupeBureau, setOccupeBureau] = useState(false);
+
+  // Bureaux distincts (Sprint 29, point 7) — dérivés des comptes existants,
+  // pas d'une table dédiée : "ajouter" un bureau se fait déjà en le tapant
+  // dans le formulaire de création ci-dessus.
+  const bureaux = useMemo(() => {
+    const compte = new Map<string, number>();
+    for (const c of comptes) compte.set(c.bureau, (compte.get(c.bureau) ?? 0) + 1);
+    return Array.from(compte.entries())
+      .map(([nom, n]) => ({ nom, n }))
+      .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  }, [comptes]);
 
   function maj(id: string, champs: Partial<Compte>) {
     setComptes((cs) => cs.map((c) => (c.id === id ? { ...c, ...champs } : c)));
@@ -113,6 +128,19 @@ export default function ComptesClient({
     setCopie(false);
     setAffiche({ titre: "Compte créé", email: json.email, motDePasse: json.motDePasseTemporaire });
     setNouveau({ nom: "", email: "", bureau: "", role: "technicien" });
+  }
+
+  async function renommerBureau(e: React.FormEvent) {
+    e.preventDefault();
+    setErreurBureau(null);
+    setOccupeBureau(true);
+    const { ok, json } = await appel("/api/comptes/bureaux", "PATCH", renommage);
+    setOccupeBureau(false);
+    if (!ok) return setErreurBureau(json.erreur ?? "Renommage impossible.");
+    setComptes((cs) =>
+      cs.map((c) => (c.bureau === renommage.ancien ? { ...c, bureau: renommage.nouveau } : c))
+    );
+    setRenommage({ ancien: "", nouveau: "" });
   }
 
   async function copier(texte: string) {
@@ -206,11 +234,67 @@ export default function ComptesClient({
           <button
             type="submit"
             disabled={occupe === "nouveau"}
-            className="rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
           >
+            <IconPlus className="h-4 w-4 shrink-0" />
             {occupe === "nouveau" ? "Création…" : "Créer le compte"}
           </button>
         </form>
+      </section>
+
+      <section className="rounded-md border border-line bg-white p-5">
+        <h2 className="mb-1 text-sm font-medium text-ink">Bureaux</h2>
+        <p className="mb-3 text-xs text-slate">
+          Un bureau est un texte libre, attaché à chaque compte — pas de liste séparée à gérer.
+          Pour en ajouter un, tapez-le dans le formulaire de création ci-dessus. Pour corriger ou
+          harmoniser un nom existant, renommez-le ici : tous les comptes concernés sont mis à jour
+          en une fois.
+        </p>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {bureaux.map((b) => (
+            <span
+              key={b.nom}
+              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-xs text-ink"
+            >
+              {b.nom}
+              <span className="text-slate">· {b.n}</span>
+            </span>
+          ))}
+        </div>
+        <form onSubmit={renommerBureau} className="grid gap-3 sm:grid-cols-3">
+          <select
+            aria-label="Bureau à renommer"
+            required
+            value={renommage.ancien}
+            onChange={(e) => setRenommage({ ...renommage, ancien: e.target.value })}
+            className={CHAMP}
+          >
+            <option value="">— Choisir un bureau —</option>
+            {bureaux.map((b) => (
+              <option key={b.nom} value={b.nom}>
+                {b.nom} ({b.n})
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label="Nouveau nom du bureau"
+            placeholder="Nouveau nom"
+            required
+            maxLength={120}
+            value={renommage.nouveau}
+            onChange={(e) => setRenommage({ ...renommage, nouveau: e.target.value })}
+            className={CHAMP}
+          />
+          <button
+            type="submit"
+            disabled={occupeBureau}
+            className="inline-flex items-center justify-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas disabled:opacity-60"
+          >
+            <IconModifier className="h-4 w-4 shrink-0" />
+            {occupeBureau ? "Renommage…" : "Renommer"}
+          </button>
+        </form>
+        {erreurBureau && <p className="mt-2 text-sm text-error">{erreurBureau}</p>}
       </section>
 
       <div className="overflow-x-auto rounded-md border border-line bg-white">
@@ -233,8 +317,26 @@ export default function ComptesClient({
               return (
                 <tr key={c.id} data-compte={c.email} className={`border-b border-line last:border-0 ${c.actif ? "" : "bg-canvas text-slate"}`}>
                   <td className="px-3 py-2 font-medium text-ink">
-                    {c.nom}
-                    {soi && <span className="ml-2 rounded bg-signal-bg px-1.5 py-0.5 text-xs text-signal">vous</span>}
+                    <div className="flex items-center gap-2">
+                      <input
+                        aria-label={`Nom de ${c.nom}`}
+                        defaultValue={c.nom}
+                        maxLength={120}
+                        disabled={occupe === c.id}
+                        onBlur={async (e) => {
+                          const v = e.target.value.trim();
+                          if (!v || v === c.nom) {
+                            e.target.value = c.nom;
+                            return;
+                          }
+                          const ok = await modifier(c, { nom: v }, { nom: v });
+                          if (!ok) e.target.value = c.nom;
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                        className={`${CHAMP} min-w-[10rem] font-medium`}
+                      />
+                      {soi && <span className="rounded bg-signal-bg px-1.5 py-0.5 text-xs text-signal">vous</span>}
+                    </div>
                   </td>
                   <td className="px-3 py-2">{c.email}</td>
                   <td className="px-3 py-2">
@@ -311,8 +413,9 @@ export default function ComptesClient({
                         type="button"
                         disabled={occupe === c.id}
                         onClick={() => reinitialiser(c)}
-                        className="text-sm text-signal underline hover:text-signal-light disabled:opacity-50"
+                        className="inline-flex items-center gap-1 text-sm text-signal underline hover:text-signal-light disabled:opacity-50"
                       >
+                        <IconRafraichir className="h-3.5 w-3.5 shrink-0" />
                         Réinitialiser le mot de passe
                       </button>
                       {c.supprimable && (
@@ -320,7 +423,7 @@ export default function ComptesClient({
                           type="button"
                           disabled={occupe === c.id}
                           onClick={() => supprimer(c)}
-                          className="text-sm text-red-700 underline hover:text-red-900 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 text-sm text-red-700 underline hover:text-red-900 disabled:opacity-50"
                         >
                           Supprimer (jamais utilisé)
                         </button>

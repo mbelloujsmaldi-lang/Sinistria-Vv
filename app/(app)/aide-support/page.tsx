@@ -23,7 +23,7 @@ export default async function PageAideSupport() {
     .select("role, actif")
     .eq("id", user.id)
     .single();
-  if (!profil?.actif) redirect("/dashboard");
+  if (!profil?.actif) redirect("/accueil");
 
   const role = profil.role as UserRole;
   const estSupport = peutGererSupport(role);

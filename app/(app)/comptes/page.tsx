@@ -10,7 +10,7 @@ import ComptesClient, { type Compte } from "./comptes-client";
 // /api/comptes, et la RLS + le trigger 0011 protègent les écritures).
 export default async function PageComptes() {
   const acteur = await acteurAdminTechnique();
-  if (!acteur) redirect("/dashboard");
+  if (!acteur) redirect("/accueil");
 
   const supabase = await createClient();
   const admin = createAdminClient();

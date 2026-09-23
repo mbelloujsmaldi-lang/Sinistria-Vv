@@ -21,7 +21,7 @@ export default async function PageReferentiel() {
     .eq("id", user.id)
     .single();
   if (!profil?.actif || !peutEditerReferentiel(profil.role as UserRole)) {
-    redirect("/dashboard");
+    redirect("/accueil");
   }
 
   const { data } = await supabase

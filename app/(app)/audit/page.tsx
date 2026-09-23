@@ -27,7 +27,7 @@ export default async function PageAudit({
     .eq("id", user.id)
     .single();
   if (!profil?.actif || !peutConsulterAudit(profil.role as UserRole)) {
-    redirect("/dashboard");
+    redirect("/accueil");
   }
 
   const sp = await searchParams;

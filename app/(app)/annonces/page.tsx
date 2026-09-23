@@ -17,7 +17,7 @@ export default async function PageAnnonces() {
     .select("role, bureau, actif")
     .eq("id", user.id)
     .single();
-  if (!profil?.actif) redirect("/dashboard");
+  if (!profil?.actif) redirect("/accueil");
 
   const estAdmin = profil.role === "admin_technique";
 

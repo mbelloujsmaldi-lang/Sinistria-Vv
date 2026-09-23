@@ -1,16 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { LABELS_ROLE, type UserRole } from "@/lib/roles";
 import { chargerTableauDeBord } from "@/lib/analyse";
 import { LABELS_STATUT } from "../vv/statut-badge";
 
 const DH = (v: number) => `${Math.round(v).toLocaleString("fr-MA")} DH`;
 
-// Accueil (Sprint 24, Phase C) — absorbe le tableau de bord analytique du
-// Sprint 16 (ex-/analyse/dashboard, retirée avec redirection permanente),
-// en plus du bloc profil déjà présent ici depuis le Sprint 1. Une seule
-// page d'accueil, plus de doublon conceptuel entre les deux "dashboard".
+// Tableau de bord (Sprint 24, Phase C : fusionné avec l'accueil ; Sprint 29
+// point 1 : re-scindé sur demande explicite — l'accueil/bienvenue devient
+// /accueil, point d'entrée officiel après connexion, et cette page ne garde
+// que l'analytique, avec son propre onglet de nav ("Tableau de bord",
+// premier de la liste).
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -21,12 +20,6 @@ export default async function DashboardPage() {
   if (!user) {
     redirect("/login");
   }
-
-  const { data: profil } = await supabase
-    .from("profiles")
-    .select("nom, role, bureau")
-    .eq("id", user.id)
-    .single();
 
   const d = await chargerTableauDeBord(supabase);
   const tauxValidationPct = d.nbTraites ? (d.nbValides / d.nbTraites) * 100 : 0;
@@ -42,36 +35,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
-      <div className="rounded-md border border-line bg-white p-6">
-        <p className="text-sm text-slate">Bienvenue,</p>
-        <h1 className="mb-4 text-lg font-bold text-ink">
-          {profil?.nom ?? user.email}
-        </h1>
-
-        <dl className="grid grid-cols-2 gap-y-3 text-sm">
-          <dt className="text-slate">Rôle</dt>
-          <dd className="text-ink">
-            {profil?.role ? LABELS_ROLE[profil.role as UserRole] : "—"}
-          </dd>
-          <dt className="text-slate">Bureau</dt>
-          <dd className="text-ink">{profil?.bureau ?? "—"}</dd>
-        </dl>
-
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <Link
-            href="/vv/nouveau"
-            className="block rounded bg-signal py-2 text-center text-sm font-medium text-white transition-colors hover:bg-signal-light"
-          >
-            Nouveau calcul
-          </Link>
-          <Link
-            href="/vv"
-            className="block rounded border border-line py-2 text-center text-sm font-medium text-ink transition-colors hover:bg-slate-50"
-          >
-            Voir les calculs
-          </Link>
-        </div>
-      </div>
+      <h1 className="text-lg font-bold text-ink">Tableau de bord</h1>
 
       {d.nbDossiers === 0 ? (
         <p className="rounded-md border border-line bg-white p-6 text-center text-sm text-slate">

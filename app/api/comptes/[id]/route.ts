@@ -42,12 +42,20 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   if (!cible) return NextResponse.json({ erreur: "Compte introuvable." }, { status: 404 });
 
   const patch: {
+    nom?: string;
     role?: UserRole;
     bureau?: string;
     chef_hierarchique_id?: string | null;
     actif?: boolean;
   } = {};
 
+  if (corps.nom !== undefined) {
+    const nom = typeof corps.nom === "string" ? corps.nom.trim() : "";
+    if (!nom || nom.length > 120) {
+      return NextResponse.json({ erreur: "Nom requis (120 caractères maximum)." }, { status: 400 });
+    }
+    patch.nom = nom;
+  }
   if (corps.role !== undefined) {
     if (!ROLES.includes(corps.role as UserRole)) {
       return NextResponse.json({ erreur: "Rôle invalide." }, { status: 400 });
@@ -132,7 +140,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
     .from("profiles")
     .update(patch)
     .eq("id", id)
-    .select("id, role, bureau, chef_hierarchique_id, actif")
+    .select("id, nom, role, bureau, chef_hierarchique_id, actif")
     .single();
   if (error || !maj) {
     return NextResponse.json({ erreur: "Modification refusée." }, { status: 403 });

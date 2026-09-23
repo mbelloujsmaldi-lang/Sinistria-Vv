@@ -5,6 +5,8 @@ import { StatutBadge, ActionHistoriqueBadge } from "../statut-badge";
 import ActionsVV from "./actions-vv";
 import PdfVV from "./pdf-vv";
 import Discussion from "./discussion";
+import Pipeline from "./pipeline";
+import { IconModifier } from "../../nav-icons";
 import type { DonneesFiche } from "@/lib/fiche-pdf";
 import { peutReviser, peutValider, LABELS_ROLE, type UserRole } from "@/lib/roles";
 import { chargerComparaisonMarche } from "@/lib/comparaison-marche";
@@ -182,43 +184,85 @@ export default async function DetailCalculVVPage({
       {!revisionPrecedente && !revisionSuivante && <div className="mb-6" />}
 
       <div className="rounded-md border border-line bg-white p-6">
-        <dl className="grid grid-cols-2 gap-y-2 text-sm">
-          <dt className="text-slate">Réf. dossier externe</dt>
-          <dd className="text-ink">{calcul.reference_dossier_externe || "—"}</dd>
+        <Pipeline statut={calcul.statut} />
+      </div>
 
-          <dt className="text-slate">Valeur à neuf</dt>
-          <dd className="text-ink">{Number(calcul.valeur_neuve).toLocaleString("fr-MA")} DH</dd>
+      <div className="mt-6 rounded-md border border-line bg-white p-6">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-slate">
+              Identification
+            </p>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">Réf. dossier externe</dt>
+                <dd className="text-ink">{calcul.reference_dossier_externe || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">Marque / Modèle</dt>
+                <dd className="text-ink">
+                  {calcul.marque || "—"} {calcul.modele || ""}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">Immatriculation</dt>
+                <dd className="text-ink">{calcul.immatriculation || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">Carburant</dt>
+                <dd className="text-ink">{calcul.carburant || "—"}</dd>
+              </div>
+            </dl>
+          </div>
 
-          <dt className="text-slate">VVADE sans correctif</dt>
-          <dd className="text-ink">
-            {Number(calcul.vvade_sans_correctif).toLocaleString("fr-MA")} DH
-          </dd>
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-slate">
+              Éléments de calcul
+            </p>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">Valeur à neuf</dt>
+                <dd className="text-ink">{Number(calcul.valeur_neuve).toLocaleString("fr-MA")} DH</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">VVADE sans correctif</dt>
+                <dd className="text-ink">
+                  {Number(calcul.vvade_sans_correctif).toLocaleString("fr-MA")} DH
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">Correctif entretien (β)</dt>
+                <dd className="text-ink">
+                  {(Number(calcul.correctif_beta_pct) * 100).toFixed(1)}% (
+                  {Number(calcul.correctif_beta_montant).toLocaleString("fr-MA")} DH)
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate">Correctif kilométrage (λ)</dt>
+                <dd className="text-ink">
+                  {(Number(calcul.correctif_lambda_pct) * 100).toFixed(1)}% (
+                  {Number(calcul.correctif_lambda_montant).toLocaleString("fr-MA")} DH)
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
 
-          <dt className="text-slate">Correctif entretien (β)</dt>
-          <dd className="text-ink">
-            {(Number(calcul.correctif_beta_pct) * 100).toFixed(1)}% (
-            {Number(calcul.correctif_beta_montant).toLocaleString("fr-MA")} DH)
-          </dd>
-
-          <dt className="text-slate">Correctif kilométrage (λ)</dt>
-          <dd className="text-ink">
-            {(Number(calcul.correctif_lambda_pct) * 100).toFixed(1)}% (
-            {Number(calcul.correctif_lambda_montant).toLocaleString("fr-MA")} DH)
-          </dd>
-
-          <dt className="font-medium text-ink">Valeur calculée</dt>
-          <dd className="font-medium text-signal">
-            {ttcHt(
-              Number(calcul.valeur_calculee),
-              calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null,
-              calcul.vvade_finale_ht !== null ? Number(calcul.vvade_finale_ht) : null
-            )}
-          </dd>
-
+        <div className="mt-5 rounded-md bg-canvas p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-medium text-ink">Valeur calculée</span>
+            <span className="font-medium text-signal">
+              {ttcHt(
+                Number(calcul.valeur_calculee),
+                calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null,
+                calcul.vvade_finale_ht !== null ? Number(calcul.vvade_finale_ht) : null
+              )}
+            </span>
+          </div>
           {calcul.valeur_definitive && (
-            <>
-              <dt className="font-medium text-ink">Valeur définitive</dt>
-              <dd className="font-medium text-emerald-700">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
+              <span className="text-sm font-medium text-ink">Valeur définitive</span>
+              <span className="font-medium text-emerald-700">
                 {ttcHt(
                   Number(calcul.valeur_definitive),
                   calcul.taux_tva_applique !== null ? Number(calcul.taux_tva_applique) : null
@@ -229,31 +273,28 @@ export default async function DetailCalculVVPage({
                     {Number(calcul.ecart_pct).toFixed(1)}%)
                   </span>
                 )}
-              </dd>
-            </>
+              </span>
+            </div>
           )}
-
           {calcul.justification_ecart && (
-            <>
-              <dt className="text-slate">Justification écart</dt>
-              <dd className="text-ink">{calcul.justification_ecart}</dd>
-            </>
+            <p className="mt-2 border-t border-line pt-2 text-xs text-slate">
+              Justification de l&apos;écart : <span className="text-ink">{calcul.justification_ecart}</span>
+            </p>
           )}
-
           {calcul.motif_rejet && (
-            <>
-              <dt className="text-slate">Motif de rejet</dt>
-              <dd className="text-ink">{calcul.motif_rejet}</dd>
-            </>
+            <p className="mt-2 border-t border-error/30 pt-2 text-xs text-error">
+              Motif de rejet : {calcul.motif_rejet}
+            </p>
           )}
-        </dl>
+        </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-4">
           {(peutModifier || peutReviserCeCalcul) && (
             <Link
               href={`/vv/${calcul.id}/modifier`}
-              className="inline-block rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-slate-50"
             >
+              <IconModifier className="h-4 w-4 shrink-0" />
               {peutModifier ? "Modifier" : "Réviser"}
             </Link>
           )}

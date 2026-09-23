@@ -97,7 +97,7 @@ export default async function NouveauCalculVVPage({
           </p>
         </div>
         <Link
-          href="/vv/importer"
+          href="/echange"
           className="whitespace-nowrap text-sm text-signal underline hover:text-signal-light"
         >
           Import en masse (CSV) →
@@ -116,8 +116,8 @@ export default async function NouveauCalculVVPage({
       />
 
       <p className="mt-8 text-xs text-slate">
-        <a href="/dashboard" className="underline hover:text-ink">
-          ← Retour au tableau de bord
+        <a href="/accueil" className="underline hover:text-ink">
+          ← Retour à l&apos;accueil
         </a>
       </p>
     </main>

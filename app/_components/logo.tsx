@@ -29,10 +29,20 @@ export default function Logo({
       />
       {/* Le SVG garde une marge vide à droite du mot : le badge la recouvre
           (proportionnel à la hauteur, voir lib/logo-metrics.ts) pour rester
-          collé au texte. */}
+          collé au texte.
+          Sprint 29 (point 2) : taille de police en `text-xs` FIXE alors que
+          le mot "Sinistria" (SVG) rétrécit avec `hauteur` — à hauteur
+          réduite (barre latérale), le badge devenait visuellement plus
+          grand que le mot lui-même. Corrigé en dérivant la taille du badge
+          de `hauteur`, au même ratio que la valeur par défaut (badge 12px
+          pour hauteur 40 => 0,3 · hauteur). */}
       <span
-        className="rounded bg-signal-bg px-1.5 py-0.5 text-xs font-medium text-signal"
-        style={{ marginLeft: hauteur * LOGO_MARGE_BADGE }}
+        className="whitespace-nowrap rounded bg-signal-bg font-medium text-signal"
+        style={{
+          marginLeft: hauteur * LOGO_MARGE_BADGE,
+          fontSize: hauteur * 0.3,
+          padding: `${hauteur * 0.05}px ${hauteur * 0.15}px`,
+        }}
       >
         Vv
       </span>

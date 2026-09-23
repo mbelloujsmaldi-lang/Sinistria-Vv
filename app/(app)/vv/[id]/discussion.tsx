@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { envoyerMessageDossier } from "./discussion-actions";
 import type { MessageDossier } from "@/lib/messagerie";
+import { IconEnvoyer } from "../../nav-icons";
 
 // Discussion par dossier (Sprint 27) — remplace le système "proposition
 // d'e-mail" de l'ancien Google Apps Script. Messages système (posés par
@@ -85,8 +86,9 @@ export default function Discussion({
         <button
           onClick={envoyer}
           disabled={envoi || !corps.trim()}
-          className="self-end rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+          className="inline-flex shrink-0 items-center gap-2 self-end rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
         >
+          <IconEnvoyer className="h-4 w-4 shrink-0" />
           {envoi ? "Envoi…" : "Envoyer"}
         </button>
       </div>

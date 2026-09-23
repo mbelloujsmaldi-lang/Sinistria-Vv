@@ -8,6 +8,7 @@ import NavLink from "./nav-link";
 import NotificationBell from "./notification-bell";
 import ProfileMenu from "./profile-menu";
 import {
+  IconTableauBord,
   IconNouveauCalcul,
   IconRegistre,
   IconValidations,
@@ -16,6 +17,7 @@ import {
   IconComptes,
   IconAnnonces,
   IconAide,
+  IconEchange,
 } from "./nav-icons";
 
 const CLE_STOCKAGE = "sinistria-sidebar-reduite";
@@ -112,17 +114,17 @@ export default function Sidebar({
           }`}
         >
           <Link
-            href="/dashboard"
-            aria-label="Sinistria Vv — tableau de bord"
+            href="/accueil"
+            aria-label="Sinistria Vv — accueil"
             onClick={() => setOuverteMobile(false)}
             className={`flex-1 ${reduite ? "md:hidden" : ""}`}
           >
-            <Logo variante="sombre" hauteur={24} />
+            <Logo variante="sombre" hauteur={32} />
           </Link>
           {reduite && (
             <Link
-              href="/dashboard"
-              aria-label="Sinistria Vv — tableau de bord"
+              href="/accueil"
+              aria-label="Sinistria Vv — accueil"
               className="hidden h-7 w-7 items-center justify-center rounded-md bg-signal text-[11px] font-semibold text-canvas md:flex"
             >
               Vv
@@ -161,6 +163,9 @@ export default function Sidebar({
           className="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3"
           onClick={() => setOuverteMobile(false)}
         >
+          <NavLink href="/dashboard" icon={<IconTableauBord />} reduit={reduite}>
+            Tableau de bord
+          </NavLink>
           <NavLink href="/vv/nouveau" icon={<IconNouveauCalcul />} reduit={reduite}>
             Nouveau calcul
           </NavLink>
@@ -197,6 +202,9 @@ export default function Sidebar({
           )}
           <NavLink href="/annonces" icon={<IconAnnonces />} reduit={reduite}>
             Annonces
+          </NavLink>
+          <NavLink href="/echange" icon={<IconEchange />} reduit={reduite}>
+            Echange
           </NavLink>
           <NavLink href="/aide-support" icon={<IconAide />} reduit={reduite}>
             Aide &amp; Support

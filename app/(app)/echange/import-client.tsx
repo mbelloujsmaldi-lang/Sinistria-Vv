@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { analyserCsv, construireCsv } from "@/lib/csv";
 import { importerDossiers, type LigneImport, type ResultatLigne } from "./import-actions";
+import { IconTelecharger, IconPlus } from "../nav-icons";
 
 // Import en masse (Sprint 27) — CSV uniquement (pas de JSON : un seul
 // format à documenter/tester, cohérent avec l'export du Registre déjà en
@@ -130,8 +131,9 @@ export default function ImportClient() {
         <p className="mb-3 font-mono text-xs text-slate">{COLONNES.join(", ")}</p>
         <button
           onClick={telechargerModele}
-          className="rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas"
+          className="inline-flex items-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas"
         >
+          <IconTelecharger className="h-4 w-4 shrink-0" />
           Télécharger le modèle CSV
         </button>
       </div>
@@ -155,8 +157,9 @@ export default function ImportClient() {
           <button
             onClick={lancerImport}
             disabled={enCours}
-            className="mt-3 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
+            className="mt-3 inline-flex items-center gap-2 rounded bg-signal px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
           >
+            <IconPlus className="h-4 w-4 shrink-0" />
             {enCours ? "Import en cours…" : `Importer ${lignes.length} dossier${lignes.length > 1 ? "s" : ""}`}
           </button>
         )}

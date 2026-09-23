@@ -9,6 +9,7 @@ import {
   chargerRegistre,
   type FiltresRegistre,
 } from "@/lib/registre";
+import { IconNouveauCalcul, IconFiltre, IconRafraichir, IconTelecharger } from "../nav-icons";
 
 const CHAMP =
   "w-full rounded border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-signal focus:ring-1 focus:ring-signal";
@@ -160,8 +161,9 @@ export default async function ListeCalculsVVPage({
         <h1 className="text-lg font-bold text-ink">Registre des calculs de valeur vénale</h1>
         <Link
           href="/vv/nouveau"
-          className="rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light"
+          className="inline-flex items-center gap-2 rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light"
         >
+          <IconNouveauCalcul className="h-4 w-4 shrink-0" />
           Nouveau calcul
         </Link>
       </div>
@@ -276,11 +278,16 @@ export default async function ListeCalculsVVPage({
         <div className="flex items-end gap-2 sm:col-span-3 lg:col-span-2">
           <button
             type="submit"
-            className="flex-1 rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light"
+            className="flex flex-1 items-center justify-center gap-2 rounded bg-signal px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-signal-light"
           >
+            <IconFiltre className="h-4 w-4 shrink-0" />
             Filtrer
           </button>
-          <a href="/vv" className="rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas">
+          <a
+            href="/vv"
+            className="flex items-center gap-2 rounded border border-line px-3 py-1.5 text-sm text-ink hover:bg-canvas"
+          >
+            <IconRafraichir className="h-4 w-4 shrink-0" />
             Réinitialiser
           </a>
         </div>
@@ -306,8 +313,9 @@ export default async function ListeCalculsVVPage({
         {" · "}
         <a
           href={`/api/registre/export?${paramsExport.toString()}`}
-          className="text-signal underline hover:text-signal-light"
+          className="inline-flex items-center gap-1 text-signal underline hover:text-signal-light"
         >
+          <IconTelecharger className="h-3.5 w-3.5 shrink-0" />
           Exporter en CSV ({correspondances} ligne{correspondances > 1 ? "s" : ""})
         </a>
       </p>
@@ -493,8 +501,8 @@ export default async function ListeCalculsVVPage({
       )}
 
       <p className="mt-6 text-xs text-slate">
-        <Link href="/dashboard" className="underline hover:text-ink">
-          ← Retour au tableau de bord
+        <Link href="/accueil" className="underline hover:text-ink">
+          ← Retour à l&apos;accueil
         </Link>
       </p>
     </main>

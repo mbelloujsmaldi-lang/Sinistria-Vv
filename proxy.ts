@@ -75,7 +75,7 @@ export default async function proxy(request: NextRequest) {
 
   if (user && estPageConnexionExacte) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/accueil";
     return NextResponse.redirect(url);
   }
 
