@@ -7,7 +7,6 @@ import type { CategorieVehicule } from "@/lib/calcul-vv";
 import {
   chargerOptionsFiltres,
   chargerRegistre,
-  LIMITE_REGISTRE,
   type FiltresRegistre,
 } from "@/lib/registre";
 
@@ -55,11 +54,23 @@ export default async function ListeCalculsVVPage({
     tri: uneVal(sp.tri) || undefined,
     ordre: uneVal(sp.ordre) === "asc" ? "asc" : "desc",
   };
+  const pageDemandee = parseInt(uneVal(sp.page), 10);
 
-  const [options, { lignes, correspondances, total }] = await Promise.all([
+  const [options, resultat] = await Promise.all([
     chargerOptionsFiltres(supabase),
-    chargerRegistre(supabase, filtres),
+    chargerRegistre(supabase, filtres, Number.isFinite(pageDemandee) ? pageDemandee : 1),
   ]);
+  let { lignes, correspondances, total, page, totalPages } = resultat;
+
+  // Page demandée au-delà du nombre réel de pages (filtre changé entre-temps,
+  // lien obsolète...) : recharger sur la dernière page valide plutôt que
+  // d'afficher "aucun résultat" alors que le filtre correspond bien à des
+  // dossiers.
+  if (page > totalPages) {
+    const rechargee = await chargerRegistre(supabase, filtres, totalPages);
+    lignes = rechargee.lignes;
+    page = rechargee.page;
+  }
 
   // Puces de filtres actifs — chacune retire uniquement son propre
   // paramètre en conservant les autres (tri/ordre inclus).
@@ -114,6 +125,34 @@ export default async function ListeCalculsVVPage({
   }
 
   const paramsExport = new URLSearchParams(paramsBase);
+
+  // Pagination (page=N) — un paramètre de plus, cohérent avec le reste :
+  // absent de paramsBase, donc un changement de filtre ou de tri revient
+  // naturellement à la page 1 (rien ne le reporte). Seule la navigation de
+  // page à page le fixe explicitement.
+  function urlPage(n: number): string {
+    const params = new URLSearchParams(paramsBase);
+    if (n > 1) params.set("page", String(n));
+    const s = params.toString();
+    return s ? `/vv?${s}` : "/vv";
+  }
+
+  function numerosPagination(courante: number, total: number): (number | "…")[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const voisins = new Set<number>([1, total, courante, courante - 1, courante + 1]);
+    const nums = Array.from(voisins)
+      .filter((n) => n >= 1 && n <= total)
+      .sort((a, b) => a - b);
+    const out: (number | "…")[] = [];
+    let precedent = 0;
+    for (const n of nums) {
+      if (precedent && n - precedent > 1) out.push("…");
+      out.push(n);
+      precedent = n;
+    }
+    return out;
+  }
+  const pagesAffichees = numerosPagination(page, totalPages);
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -264,15 +303,12 @@ export default async function ListeCalculsVVPage({
 
       <p className="mb-3 text-sm text-slate">
         {correspondances} / {total} dossier{total > 1 ? "s" : ""}
-        {correspondances > LIMITE_REGISTRE && (
-          <span> — affichage limité aux {LIMITE_REGISTRE} premiers résultats</span>
-        )}
         {" · "}
         <a
           href={`/api/registre/export?${paramsExport.toString()}`}
           className="text-signal underline hover:text-signal-light"
         >
-          Exporter en CSV ({lignes.length} ligne{lignes.length > 1 ? "s" : ""})
+          Exporter en CSV ({correspondances} ligne{correspondances > 1 ? "s" : ""})
         </a>
       </p>
 
@@ -405,6 +441,56 @@ export default async function ListeCalculsVVPage({
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <p className="text-slate">
+            Page {page} sur {totalPages} ({correspondances} dossier{correspondances > 1 ? "s" : ""})
+          </p>
+          <div className="flex items-center gap-1">
+            {page > 1 ? (
+              <a
+                href={urlPage(page - 1)}
+                className="rounded border border-line px-2.5 py-1 text-ink hover:bg-canvas"
+              >
+                ← Précédent
+              </a>
+            ) : (
+              <span className="rounded border border-line px-2.5 py-1 text-slate opacity-50">← Précédent</span>
+            )}
+            {pagesAffichees.map((n, i) =>
+              n === "…" ? (
+                <span key={`ellipse-${i}`} className="px-1.5 text-slate">
+                  …
+                </span>
+              ) : (
+                <a
+                  key={n}
+                  href={urlPage(n)}
+                  aria-current={n === page ? "page" : undefined}
+                  className={`rounded px-2.5 py-1 ${
+                    n === page
+                      ? "bg-signal font-medium text-white"
+                      : "border border-line text-ink hover:bg-canvas"
+                  }`}
+                >
+                  {n}
+                </a>
+              )
+            )}
+            {page < totalPages ? (
+              <a
+                href={urlPage(page + 1)}
+                className="rounded border border-line px-2.5 py-1 text-ink hover:bg-canvas"
+              >
+                Suivant →
+              </a>
+            ) : (
+              <span className="rounded border border-line px-2.5 py-1 text-slate opacity-50">Suivant →</span>
+            )}
+          </div>
+        </div>
+      )}
 
       <p className="mt-6 text-xs text-slate">
         <Link href="/dashboard" className="underline hover:text-ink">

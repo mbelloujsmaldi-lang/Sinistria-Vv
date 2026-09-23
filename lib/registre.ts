@@ -67,7 +67,7 @@ const COLONNES_TRI: Record<string, string> = {
   statut: "statut",
 };
 
-export const LIMITE_REGISTRE = 200;
+export const TAILLE_PAGE = 20;
 
 // Caractères structurants pour PostgREST .or() — retirés du terme de
 // recherche avant construction du filtre : un utilisateur ne doit pas
@@ -145,30 +145,63 @@ export async function chargerOptionsFiltres(supabase: SupabaseClient): Promise<O
   };
 }
 
-export async function chargerRegistre(
-  supabase: SupabaseClient,
-  filtres: FiltresRegistre
-): Promise<{ lignes: LigneRegistre[]; correspondances: number; total: number }> {
-  const { count: total } = await supabase
-    .from("vv_calculations")
-    .select("*", { count: "exact", head: true });
-
+// Requête filtrée + triée, commune à l'affichage paginé et à l'export CSV
+// (Sprint 25 ; pagination Sprint 25-bis) — AVANT application de la plage
+// de pagination, pour que les deux usages ne divergent jamais sur ce qui
+// est un "résultat filtré".
+function construireRequeteFiltreeTriee(supabase: SupabaseClient, filtres: FiltresRegistre) {
   const colonneTri = COLONNES_TRI[filtres.tri ?? ""] ?? "created_at";
   const ordreAsc = filtres.ordre === "asc";
 
   let requete = supabase.from("vv_calculations").select(SELECT_REGISTRE, { count: "exact" });
   requete = appliquerFiltres(requete, filtres);
-  requete = requete
-    .order(colonneTri, { ascending: ordreAsc, nullsFirst: !ordreAsc })
-    .limit(LIMITE_REGISTRE);
+  return requete.order(colonneTri, { ascending: ordreAsc, nullsFirst: !ordreAsc });
+}
 
+export async function chargerRegistre(
+  supabase: SupabaseClient,
+  filtres: FiltresRegistre,
+  page: number
+): Promise<{
+  lignes: LigneRegistre[];
+  correspondances: number;
+  total: number;
+  page: number;
+  totalPages: number;
+}> {
+  const { count: total } = await supabase
+    .from("vv_calculations")
+    .select("*", { count: "exact", head: true });
+
+  const pageValide = Number.isInteger(page) && page > 0 ? page : 1;
+  const debut = (pageValide - 1) * TAILLE_PAGE;
+
+  const requete = construireRequeteFiltreeTriee(supabase, filtres).range(
+    debut,
+    debut + TAILLE_PAGE - 1
+  );
   const { data, count: correspondances } = await requete;
+
+  const totalPages = Math.max(1, Math.ceil((correspondances ?? 0) / TAILLE_PAGE));
 
   return {
     lignes: (data as LigneRegistre[] | null) ?? [],
     correspondances: correspondances ?? 0,
     total: total ?? 0,
+    page: pageValide,
+    totalPages,
   };
+}
+
+// Export CSV (Sprint 25) — SÉPARÉ de la pagination d'affichage : renvoie
+// l'intégralité du résultat filtré, jamais une seule page ni une limite
+// arbitraire. Usage différent (analyse hors ligne), pas un miroir de l'écran.
+export async function chargerRegistreComplet(
+  supabase: SupabaseClient,
+  filtres: FiltresRegistre
+): Promise<LigneRegistre[]> {
+  const { data } = await construireRequeteFiltreeTriee(supabase, filtres);
+  return (data as LigneRegistre[] | null) ?? [];
 }
 
 export const COLONNES_CSV_REGISTRE = [
