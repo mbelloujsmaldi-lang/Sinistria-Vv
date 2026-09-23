@@ -3,8 +3,15 @@ import LogoutButton from "./logout-button";
 import Logo from "../_components/logo";
 import AnalyseMenu from "./analyse-menu";
 import NavLink from "./nav-link";
+import NotificationBell from "./notification-bell";
 import { createClient } from "@/lib/supabase/server";
-import { peutConsulterAudit, peutEditerReferentiel, LABELS_ROLE, type UserRole } from "@/lib/roles";
+import {
+  peutConsulterAudit,
+  peutEditerReferentiel,
+  peutValider,
+  LABELS_ROLE,
+  type UserRole,
+} from "@/lib/roles";
 
 // Shell de navigation unifié (Sprint 24). Auparavant, "Nouveau calcul" et
 // "Registre" (/vv) n'existaient qu'en dur sur /dashboard, absents de ce
@@ -28,6 +35,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const estAdmin = profil?.role === "admin_technique";
   const peutReferentiel = peutEditerReferentiel(profil?.role as UserRole | undefined);
   const peutAudit = peutConsulterAudit(profil?.role as UserRole | undefined);
+  const peutValiderDossiers = peutValider(profil?.role as UserRole | undefined);
+
+  // Compteur de la pastille "Validations" (Sprint 27, Phase H) — un seul
+  // petit chiffre, pas une refonte visuelle généralisée du shell.
+  let nbEnAttente = 0;
+  if (peutValiderDossiers) {
+    const { count } = await supabase
+      .from("vv_calculations")
+      .select("*", { count: "exact", head: true })
+      .eq("statut", "soumis");
+    nbEnAttente = count ?? 0;
+  }
 
   return (
     <div className="min-h-screen">
@@ -41,16 +60,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <nav className="flex flex-wrap items-center gap-5">
               <NavLink href="/vv/nouveau">Nouveau calcul</NavLink>
               <NavLink href="/vv">Registre</NavLink>
+              {peutValiderDossiers && (
+                <NavLink href="/validations" compteur={nbEnAttente}>
+                  Validations
+                </NavLink>
+              )}
               <AnalyseMenu />
               {peutReferentiel && <NavLink href="/referentiel">Marques &amp; Modèles</NavLink>}
               {peutAudit && <NavLink href="/audit">Journal d&apos;audit</NavLink>}
               {estAdmin && <NavLink href="/comptes">Comptes</NavLink>}
+              <NavLink href="/annonces">Annonces</NavLink>
               <NavLink href="/aide-support">Aide &amp; Support</NavLink>
             </nav>
           )}
 
           {user && (
             <div className="flex items-center gap-4">
+              <NotificationBell />
               <div className="text-right text-xs leading-tight text-line">
                 <p className="font-medium text-canvas">{profil?.nom ?? user.email}</p>
                 <p>

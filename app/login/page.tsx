@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { connecter, type EtatConnexion } from "./actions";
 import Logo from "../_components/logo";
 
@@ -77,6 +78,12 @@ export default function LoginPage() {
             {enCours ? "Connexion en cours…" : "Se connecter"}
           </button>
         </form>
+
+        <p className="mt-4 text-center text-xs text-slate">
+          <Link href="/login/mot-de-passe-oublie" className="underline hover:text-ink">
+            Mot de passe oublié ?
+          </Link>
+        </p>
       </div>
     </main>
   );

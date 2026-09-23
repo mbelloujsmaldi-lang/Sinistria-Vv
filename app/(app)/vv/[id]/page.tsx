@@ -4,9 +4,11 @@ import Link from "next/link";
 import { StatutBadge, ActionHistoriqueBadge } from "../statut-badge";
 import ActionsVV from "./actions-vv";
 import PdfVV from "./pdf-vv";
+import Discussion from "./discussion";
 import type { DonneesFiche } from "@/lib/fiche-pdf";
-import { peutReviser, LABELS_ROLE, type UserRole } from "@/lib/roles";
+import { peutReviser, peutValider, LABELS_ROLE, type UserRole } from "@/lib/roles";
 import { chargerComparaisonMarche } from "@/lib/comparaison-marche";
+import { chargerMessages } from "@/lib/messagerie";
 
 // Affiche "X DH TTC (Y DH HT)" — le HT n'est calculable que si un taux de
 // TVA a été enregistré pour ce calcul (colonne ajoutée au Sprint 8bis :
@@ -145,6 +147,12 @@ export default async function DetailCalculVVPage({
     .select("id, action, ancienne_valeur, nouvelle_valeur, observation, created_at, utilisateur_id, profiles(nom)")
     .eq("vv_calculation_id", id)
     .order("created_at", { ascending: false });
+
+  // Discussion (Sprint 27) : réservée aux participants (créateur +
+  // validateurs), miroir de la RLS dossier_messages_select (0019) — un
+  // non-participant ne verrait de toute façon rien via la RLS.
+  const estParticipant = estCreateur || peutValider(profil?.role as UserRole | undefined);
+  const messages = estParticipant ? await chargerMessages(supabase, id) : [];
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
@@ -362,6 +370,8 @@ export default async function DetailCalculVVPage({
           </ul>
         </div>
       )}
+
+      {estParticipant && <Discussion calculId={id} messages={messages} />}
 
       <p className="mt-6 text-xs text-slate">
         <Link href="/vv" className="underline hover:text-ink">

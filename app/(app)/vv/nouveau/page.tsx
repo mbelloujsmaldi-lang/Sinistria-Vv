@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import FormulaireVV, { type ValeursInitiales } from "./formulaire-vv";
 import type { UserRole } from "@/lib/roles";
 import {
@@ -87,11 +88,21 @@ export default async function NouveauCalculVVPage({
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="mb-1 text-lg font-bold text-ink">Nouveau calcul de valeur vénale</h1>
-      <p className="mb-6 text-sm text-slate">
-        Saisissez les caractéristiques du véhicule pour calculer la VVADE et
-        l&apos;enregistrer.
-      </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="mb-1 text-lg font-bold text-ink">Nouveau calcul de valeur vénale</h1>
+          <p className="text-sm text-slate">
+            Saisissez les caractéristiques du véhicule pour calculer la VVADE et
+            l&apos;enregistrer.
+          </p>
+        </div>
+        <Link
+          href="/vv/importer"
+          className="whitespace-nowrap text-sm text-signal underline hover:text-signal-light"
+        >
+          Import en masse (CSV) →
+        </Link>
+      </div>
       {valeursInitiales && (
         <p className="mb-4 rounded border border-signal bg-signal-bg px-3 py-2 text-xs text-signal">
           Formulaire pré-rempli depuis le simulateur — vérifiez les valeurs avant d&apos;enregistrer.

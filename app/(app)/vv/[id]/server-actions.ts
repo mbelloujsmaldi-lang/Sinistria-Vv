@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { posterMessageSysteme } from "@/lib/messagerie";
+import { notifierSoumission, notifierParticipantsDossier } from "@/lib/notifications";
 
 // Server Actions du dossier VV (Sprint 22) — soumettre/valider/rejeter.
 // RLS reste la garde réelle (vv_calculations_update_soumission /
@@ -9,6 +11,12 @@ import { createClient } from "@/lib/supabase/server";
 // la session serveur, jamais reçus du client (contrairement à
 // role_utilisateur, qu'aucune policy RLS ne vérifie — le faire confiance au
 // client aurait rendu l'audit falsifiable).
+//
+// Sprint 27 : chaque événement poste aussi un message SYSTÈME dans la
+// discussion du dossier + une notification aux bonnes personnes —
+// remplace le système "proposition d'e-mail" de l'ancien Google Apps
+// Script. Best-effort : une erreur ici ne doit jamais faire échouer
+// l'action métier elle-même (déjà enregistrée à ce stade).
 type Retour = { erreur: string | null };
 
 async function utilisateurCourant() {
@@ -17,8 +25,18 @@ async function utilisateurCourant() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profil } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  return { supabase, userId: user.id, role: profil?.role ?? null };
+  const { data: profil } = await supabase
+    .from("profiles")
+    .select("role, bureau, nom")
+    .eq("id", user.id)
+    .single();
+  return {
+    supabase,
+    userId: user.id,
+    role: profil?.role ?? null,
+    bureau: profil?.bureau ?? null,
+    nom: profil?.nom ?? "",
+  };
 }
 
 export async function soumettre(calculId: string): Promise<Retour> {
@@ -42,6 +60,22 @@ export async function soumettre(calculId: string): Promise<Retour> {
     action: "Soumission à validation",
   });
 
+  try {
+    const lien = `/vv/${calculId}`;
+    await posterMessageSysteme(ctx.supabase, calculId, ctx.userId, `${ctx.nom} a soumis ce dossier à validation.`);
+    if (ctx.bureau) {
+      await notifierSoumission(
+        ctx.supabase,
+        ctx.bureau,
+        ctx.userId,
+        `Dossier soumis à validation — ${ctx.nom}`,
+        lien
+      );
+    }
+  } catch {
+    /* la messagerie/notification ne doit jamais bloquer l'action métier */
+  }
+
   return { erreur: null };
 }
 
@@ -57,6 +91,12 @@ export async function valider(
   const ecartDh = Math.round((valeurDefinitive - valeurCalculee) * 100) / 100;
   const ecartPct =
     valeurCalculee !== 0 ? Math.round((ecartDh / valeurCalculee) * 10000) / 100 : 0;
+
+  const { data: calcul } = await ctx.supabase
+    .from("vv_calculations")
+    .select("created_by")
+    .eq("id", calculId)
+    .single();
 
   const { error } = await ctx.supabase
     .from("vv_calculations")
@@ -82,6 +122,28 @@ export async function valider(
     observation: justification || null,
   });
 
+  try {
+    await posterMessageSysteme(
+      ctx.supabase,
+      calculId,
+      ctx.userId,
+      `${ctx.nom} a validé ce dossier — ${valeurDefinitive} DH.`
+    );
+    if (calcul?.created_by) {
+      await notifierParticipantsDossier(
+        ctx.supabase,
+        calculId,
+        calcul.created_by,
+        ctx.userId,
+        "validation",
+        `Dossier validé — ${ctx.nom}`,
+        `/vv/${calculId}`
+      );
+    }
+  } catch {
+    /* la messagerie/notification ne doit jamais bloquer l'action métier */
+  }
+
   return { erreur: null };
 }
 
@@ -90,6 +152,12 @@ export async function rejeter(calculId: string, motifRejet: string): Promise<Ret
 
   const ctx = await utilisateurCourant();
   if (!ctx) return { erreur: "Session expirée." };
+
+  const { data: calcul } = await ctx.supabase
+    .from("vv_calculations")
+    .select("created_by")
+    .eq("id", calculId)
+    .single();
 
   const { error } = await ctx.supabase
     .from("vv_calculations")
@@ -104,6 +172,28 @@ export async function rejeter(calculId: string, motifRejet: string): Promise<Ret
     action: "Retour pour correction",
     observation: motifRejet,
   });
+
+  try {
+    await posterMessageSysteme(
+      ctx.supabase,
+      calculId,
+      ctx.userId,
+      `${ctx.nom} a retourné ce dossier pour correction — ${motifRejet}`
+    );
+    if (calcul?.created_by) {
+      await notifierParticipantsDossier(
+        ctx.supabase,
+        calculId,
+        calcul.created_by,
+        ctx.userId,
+        "rejet",
+        `Dossier retourné pour correction — ${ctx.nom}`,
+        `/vv/${calculId}`
+      );
+    }
+  } catch {
+    /* la messagerie/notification ne doit jamais bloquer l'action métier */
+  }
 
   return { erreur: null };
 }

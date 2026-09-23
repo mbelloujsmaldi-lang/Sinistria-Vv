@@ -8,6 +8,8 @@ import type {
   Entretien,
   TypeKilometrage,
 } from "@/lib/calcul-vv";
+import { posterMessageSysteme } from "@/lib/messagerie";
+import { notifierParticipantsDossier } from "@/lib/notifications";
 
 // Server Actions du formulaire VV (Sprint 22) — remplacent les appels au
 // client navigateur (RLS impose déjà les mêmes règles : créateur/statut
@@ -49,8 +51,8 @@ async function utilisateurCourant() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profil } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  return { supabase, userId: user.id, role: profil?.role ?? null };
+  const { data: profil } = await supabase.from("profiles").select("role, nom").eq("id", user.id).single();
+  return { supabase, userId: user.id, role: profil?.role ?? null, nom: profil?.nom ?? "" };
 }
 
 export async function creerCalcul(champs: ChampsCalculPayload): Promise<Retour> {
@@ -122,6 +124,37 @@ export async function reviserCalcul(
     nouvelle_valeur: champs.valeur_calculee,
     observation: `Révision de ${reference}`,
   });
+
+  try {
+    const lien = `/vv/${data.id}`;
+    await posterMessageSysteme(
+      ctx.supabase,
+      data.id,
+      ctx.userId,
+      `${ctx.nom} a créé cette révision du dossier ${reference}.`
+    );
+    // Les participants pertinents sont ceux de la discussion du dossier
+    // D'ORIGINE (calculExistantId) : la nouvelle ligne de révision démarre
+    // sa propre discussion vide.
+    const { data: original } = await ctx.supabase
+      .from("vv_calculations")
+      .select("created_by")
+      .eq("id", calculExistantId)
+      .single();
+    if (original?.created_by) {
+      await notifierParticipantsDossier(
+        ctx.supabase,
+        calculExistantId,
+        original.created_by,
+        ctx.userId,
+        "revision",
+        `Révision de ${reference} — ${ctx.nom}`,
+        lien
+      );
+    }
+  } catch {
+    /* la messagerie/notification ne doit jamais bloquer l'action métier */
+  }
 
   return { erreur: null, id: data.id };
 }
