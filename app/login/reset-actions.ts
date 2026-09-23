@@ -3,26 +3,28 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-// Récupération de mot de passe par code (Sprint 27) — remplace le
+// Récupération de mot de passe par lien (Sprint 27) — remplace le
 // "récupération par admin uniquement" par un flux self-service, sur le
-// mécanisme natif Supabase Auth (pas de table de codes maison) :
-// - resetPasswordForEmail() envoie l'e-mail. Le modèle "Reset Password"
-//   du projet a été édité (Supabase Dashboard > Authentication > Email
-//   Templates) pour afficher {{ .Token }} (OTP à 6 chiffres, variable
-//   documentée par Supabase — "peut être utilisé à la place de
-//   {{ .ConfirmationURL }}"), au lieu du seul lien magique par défaut.
-// - verifyOtp({ email, token, type: 'recovery' }) valide le code ET
-//   établit la session (cookie httpOnly, comme une connexion normale).
-// - updateUser({ password }) change le mot de passe sur cette session.
+// mécanisme natif Supabase Auth (pas de table de codes maison).
 //
-// Durée de validité / nombre d'essais : contrôlés par les réglages Auth du
-// projet Supabase (expiration OTP), pas par du code applicatif — voir la
-// note transmise à l'utilisateur : la limite exacte "3 essais" de l'ancien
-// système n'est pas un réglage Supabase documenté indépendamment ;
-// Supabase applique son propre anti-abus interne à la place.
+// Un flux par code à 6 chiffres (comme l'ancien Google Apps Script) aurait
+// exigé d'éditer le modèle d'e-mail "Reset Password" pour y ajouter
+// {{ .Token }} — verrouillé tant qu'aucun SMTP personnalisé n'est
+// configuré sur le projet (constaté dans le tableau de bord Supabase :
+// "Set up custom SMTP to edit templates"). Le lien magique par défaut, lui,
+// ne nécessite aucune édition de modèle — décision confirmée avec
+// l'utilisateur, qui a lui-même ajouté https://sinistria-vv.vercel.app aux
+// Redirect URLs autorisées (Authentication > URL Configuration).
+//
+// - resetPasswordForEmail(email, { redirectTo }) envoie l'e-mail (modèle
+//   par défaut, lien contenant token_hash + type=recovery).
+// - Le lien mène à /login/confirmer, qui appelle verifyOtp({ token_hash,
+//   type }) : valide le lien ET établit la session (cookie httpOnly).
+// - updateUser({ password }) change le mot de passe sur cette session déjà
+//   établie (definirNouveauMotDePasse ci-dessous).
 export type EtatDemande = { erreur: string | null; envoye: boolean };
 
-export async function demanderCode(
+export async function demanderLien(
   _etatPrecedent: EtatDemande,
   formData: FormData
 ): Promise<EtatDemande> {
@@ -33,34 +35,35 @@ export async function demanderCode(
   // Réponse volontairement IDENTIQUE que l'e-mail existe ou non (ne pas
   // révéler quels comptes existent), comme journaliserConnexionRefusee
   // pour la connexion.
-  await supabase.auth.resetPasswordForEmail(email);
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://sinistria-vv.vercel.app/login/confirmer",
+  });
 
   return { erreur: null, envoye: true };
 }
 
-export type EtatConfirmation = { erreur: string | null };
+export type EtatNouveauMdp = { erreur: string | null };
 
-export async function confirmerCode(
-  _etatPrecedent: EtatConfirmation,
+export async function definirNouveauMotDePasse(
+  _etatPrecedent: EtatNouveauMdp,
   formData: FormData
-): Promise<EtatConfirmation> {
-  const email = String(formData.get("email") ?? "").trim();
-  const code = String(formData.get("code") ?? "").trim();
+): Promise<EtatNouveauMdp> {
   const nouveauMdp = String(formData.get("nouveauMdp") ?? "");
   const confirmation = String(formData.get("confirmation") ?? "");
 
-  if (!email || !code) return { erreur: "E-mail et code requis." };
   if (nouveauMdp.length < 6) return { erreur: "Le mot de passe doit contenir au moins 6 caractères." };
   if (nouveauMdp !== confirmation) return { erreur: "Les deux mots de passe ne correspondent pas." };
 
   const supabase = await createClient();
-  const { error: erreurOtp } = await supabase.auth.verifyOtp({ email, token: code, type: "recovery" });
-  if (erreurOtp) {
-    return { erreur: "Code invalide ou expiré. Demandez-en un nouveau." };
-  }
+  // La session a déjà été établie par verifyOtp() dans /login/confirmer
+  // (cookie httpOnly) avant que ce formulaire ne soit affiché.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { erreur: "Session de réinitialisation expirée. Redemandez un lien." };
 
-  const { error: erreurMdp } = await supabase.auth.updateUser({ password: nouveauMdp });
-  if (erreurMdp) return { erreur: erreurMdp.message };
+  const { error } = await supabase.auth.updateUser({ password: nouveauMdp });
+  if (error) return { erreur: error.message };
 
   redirect("/dashboard");
 }

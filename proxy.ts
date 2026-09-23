@@ -37,6 +37,12 @@ export default async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginPage = request.nextUrl.pathname.startsWith("/login");
+  // Sprint 27 : distinct de isLoginPage — après un lien de réinitialisation
+  // valide, l'utilisateur a désormais une session (via verifyOtp) mais doit
+  // d'abord choisir un nouveau mot de passe. Le confondre avec isLoginPage
+  // dans la règle ci-dessous le renverrait vers /dashboard avant d'avoir pu
+  // le faire (bug réel constaté par test).
+  const estPageConnexionExacte = request.nextUrl.pathname === "/login";
 
   if (!user && !isLoginPage) {
     const url = request.nextUrl.clone();
@@ -67,7 +73,7 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  if (user && isLoginPage) {
+  if (user && estPageConnexionExacte) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

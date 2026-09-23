@@ -2,13 +2,13 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { demanderCode, type EtatDemande } from "../reset-actions";
+import { demanderLien, type EtatDemande } from "../reset-actions";
 import Logo from "../../_components/logo";
 
 const ETAT_INITIAL: EtatDemande = { erreur: null, envoye: false };
 
 export default function MotDePasseOubliePage() {
-  const [etat, action, enCours] = useActionState(demanderCode, ETAT_INITIAL);
+  const [etat, action, enCours] = useActionState(demanderLien, ETAT_INITIAL);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
@@ -19,22 +19,13 @@ export default function MotDePasseOubliePage() {
 
         <h1 className="mb-1 text-lg font-bold text-ink">Mot de passe oublié</h1>
         <p className="mb-6 text-sm text-slate">
-          Indiquez votre e-mail professionnel : un code à 6 chiffres vous sera envoyé.
+          Indiquez votre e-mail professionnel : un lien de réinitialisation vous sera envoyé.
         </p>
 
         {etat.envoye ? (
-          <div className="space-y-4">
-            <p className="rounded border border-signal bg-signal-bg px-3 py-2 text-sm text-signal">
-              Si ce compte existe, un code de vérification a été envoyé par e-mail (valable quelques
-              minutes).
-            </p>
-            <Link
-              href="/login/reinitialiser"
-              className="block w-full rounded bg-signal py-2 text-center text-sm font-medium text-white transition-colors hover:bg-signal-light"
-            >
-              J&apos;ai reçu mon code
-            </Link>
-          </div>
+          <p className="rounded border border-signal bg-signal-bg px-3 py-2 text-sm text-signal">
+            Si ce compte existe, un e-mail avec un lien de réinitialisation a été envoyé.
+          </p>
         ) : (
           <form action={action} className="space-y-4">
             <div>
@@ -62,7 +53,7 @@ export default function MotDePasseOubliePage() {
               disabled={enCours}
               className="w-full rounded bg-signal py-2 text-sm font-medium text-white transition-colors hover:bg-signal-light disabled:opacity-60"
             >
-              {enCours ? "Envoi en cours…" : "Recevoir le code"}
+              {enCours ? "Envoi en cours…" : "Recevoir le lien"}
             </button>
           </form>
         )}
